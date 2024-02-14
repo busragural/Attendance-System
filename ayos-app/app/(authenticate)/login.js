@@ -7,12 +7,10 @@ import {
   TextInput,
   View,
 } from "react-native";
-import React, { useState } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
+import React, { useEffect, useState } from "react";
 import PrimaryButton from "../../components/PrimaryButton";
-import SecondaryButton from "../../components/SecondaryButton";
 import { GlobalStyles } from "../../constants/styles";
-// import ErrorText from "../../components/ErrorText";
+import ErrorText from "../../components/ErrorText";
 import { useRouter } from "expo-router";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -23,13 +21,25 @@ const login = () => {
   const [error, setError] = useState("");
   const router = useRouter();
 
+  useEffect(() => {
+    const checkToken = async () => {
+      const token = await AsyncStorage.getItem("auth");
+      if (token) {
+        router.replace("(courses)/courses");
+      }
+    };
+  
+    checkToken();
+  }, []);
+
   const handleLogin = () => {
     const user = {
-      mail: email,
+      email: email,
       password: password,
     };
+    console.log(user);
     axios
-      .post("http://192.168.1.58:8000/login", user, {
+      .post("http://192.168.1.47:8000/login", user, {
         headers: {
           "Content-Type": "application/json",
         },
@@ -41,6 +51,7 @@ const login = () => {
       })
       .catch((error) => {
         console.error("Login failed:", error.message);
+        setError("Mail veya şifre hatalı.");
       });
   };
 
@@ -48,6 +59,7 @@ const login = () => {
     <KeyboardAvoidingView
       style={styles.allScreen}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : -200} // Adjust the offset for Android
     >
       <View style={styles.loginContainer}>
         <Image
@@ -57,6 +69,7 @@ const login = () => {
         <View style={styles.inputArea}>
           <View style={styles.inputFields}>
             <View style={styles.inputField}>
+              {error && <ErrorText>{error}</ErrorText>}
               <Text style={styles.label}>Mail</Text>
               <TextInput
                 style={styles.input}
@@ -66,7 +79,7 @@ const login = () => {
             </View>
 
             <View style={styles.inputField}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>Şifre</Text>
               <TextInput
                 style={styles.input}
                 secureTextEntry={true}
@@ -75,10 +88,9 @@ const login = () => {
             </View>
 
             <View style={styles.buttonContainer}>
-              <PrimaryButton onPress={handleLogin}>Login</PrimaryButton>
+              <PrimaryButton onPress={handleLogin}>Giriş Yap</PrimaryButton>
             </View>
           </View>
-          {/* {error && <ErrorText>{error}</ErrorText>} */}
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -95,9 +107,10 @@ const styles = StyleSheet.create({
   loginContainer: {
     flex: 1,
     backgroundColor: GlobalStyles.surfaceColors.primary,
-    padding: 20,
+    //padding: 20,
     justifyContent: "center",
     alignItems: "center",
+    paddingBottom: Platform.OS === "android" ? 20 : 0,
   },
   title: {
     fontWeight: "bold",
@@ -112,31 +125,35 @@ const styles = StyleSheet.create({
     width: "100%",
     height: Platform.OS === "ios" ? "100%" : "50%",
     resizeMode: "contain",
-    marginTop: Platform.OS === "ios" ? 20 : 70,
+    marginTop: 20,
+    marginBottom: 10,
     //backgroundColor: GlobalStyles.surfaceColors.secondary500,
   },
   inputArea: {
     flex: 3,
     justifyContent: "center",
+    width: "100%",
   },
   inputFields: {
     flexDirection: "column",
-    backgroundColor: GlobalStyles.surfaceColors.gray50,
+    //backgroundColor: GlobalStyles.surfaceColors.gray50,
     borderRadius: 10,
     padding: 30,
+    width: "100%",
   },
   inputField: {
     margin: 5,
+    width: "100%",
   },
   label: {
-    color: GlobalStyles.surfaceColors.secondary400,
+    color: GlobalStyles.surfaceColors.dark,
     fontSize: 15,
   },
   input: {
     borderWidth: 2,
-    borderColor: GlobalStyles.surfaceColors.secondary400,
+    borderColor: GlobalStyles.surfaceColors.dark,
     borderRadius: 10,
-    width: 300,
+    width: "100%",
     padding: 10,
     marginTop: 5,
   },

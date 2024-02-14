@@ -6,6 +6,7 @@ export default function Layout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="courses" />
         <Stack.Screen name="courseDetail" />
+        <Stack.Screen name="attendanceList" />
       </Stack>
     </>
   );
