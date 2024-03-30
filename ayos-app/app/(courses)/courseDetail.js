@@ -15,20 +15,20 @@ import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { Picker } from "@react-native-picker/picker";
 import WeekCard from "../../components/WeekCard";
 import ImageModal from "../../components/ImageModal";
+import * as ImageManipulator from 'expo-image-manipulator';
 
 const courseDetail = () => {
   const [isModalVisible, setModalVisible] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
   const [startWeek, setStartWeek] = useState(null);
   const [endWeek, setEndWeek] = useState(null);
-
+  const ip_address = process.env.EXPO_PUBLIC_BASE_IP;
   const router = useRouter();
   const params = useLocalSearchParams();
   const courseName = params.courseName;
   const courseCode = params.courseCode;
   const courseWeek = params.courseWeek;
   const courseStartDate = params.courseStartDate;
-
 
   const goBackToCourses = () => {
     router.back();
@@ -41,10 +41,10 @@ const courseDetail = () => {
   const openCamera = async () => {
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
     if (permissionResult.granted === false) {
-      alert("You've refused to allow this appp to access your camera!");
+      alert("You've refused to allow this app to access your camera!");
       return;
     }
-
+  
     const options = {
       title: "Select Photo",
       storageOptions: {
@@ -55,12 +55,29 @@ const courseDetail = () => {
     };
     const result = await ImagePicker.launchCameraAsync(options);
     console.log(result);
+  
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      const selectedImageUri = result.assets[0].uri;
-      setSelectedImages((prevImages) => [...prevImages, selectedImageUri]);
-      console.log("Selected Images:", selectedImages);
+      const selectedImage = result.assets[0];
+      const selectedImageUri = selectedImage.uri;
+      
+      if (!selectedImageUri.endsWith('.jpg')) {
+        // If the image is not in JPEG format, manipulate it to convert to JPEG
+        const manipResult = await ImageManipulator.manipulateAsync(
+          selectedImage.uri,
+          [{ resize: { width: selectedImage.width, height: selectedImage.height } }], // Resize action instead of format
+          { compress: 1, base64: false } // Adjust compress factor if needed
+        );
+        setSelectedImages((prevImages) => [...prevImages, manipResult.uri]);
+        //setSelectedImages([manipResult.uri]);
+        console.log("Selected Image:", manipResult.uri);
+        
+      } else {
+        setSelectedImages((prevImages) => [...prevImages, selectedImageUri]);
+        console.log("Selected Images:", selectedImages);
+      }
     }
   };
+  
 
   const openGallery = async () => {
     const permissionResult =
@@ -82,9 +99,19 @@ const courseDetail = () => {
     console.log(result);
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      const selectedImageUris = result.assets.map((asset) => asset.uri);
-      setSelectedImages((prevImages) => [...prevImages, ...selectedImageUris]);
-      console.log("Selected Images:", selectedImages);
+      const selectedImage = result.assets.find(asset => asset.uri.endsWith('.jpg')); // Find the first JPEG image
+      if (selectedImage) {
+        const manipResult = await ImageManipulator.manipulateAsync(
+          selectedImage.uri,
+          [{ resize: { width: selectedImage.width, height: selectedImage.height } }], // Resize action instead of format
+          { compress: 1, base64: false } // Adjust compress factor if needed
+        );
+        setSelectedImages((prevImages) => [...prevImages, manipResult.uri]);
+        //setSelectedImages([manipResult.uri]);
+        console.log("Selected Image:", manipResult.uri);
+      } else {
+        alert("Please select a JPEG image.");
+      }
     }
   };
 
@@ -170,12 +197,12 @@ const courseDetail = () => {
       formData.append(imageName, {
         uri: image,
         name: imageName,
-        type: "image/png", // Resim tipine göre güncelle
+        type: "image/png", 
       });
     });
 
     try {
-      const response = await fetch("http://192.168.1.47:5000/upload-images", {
+      const response = await fetch(`http://${ip_address}:5000/upload-images`, {
         method: "POST",
         body: formData,
         headers: {
@@ -196,9 +223,9 @@ const courseDetail = () => {
   return (
     <ScrollView style={styles.lecturesContainer}>
       <View style={styles.headerContainer}>
-      <TouchableOpacity onPress={goBackToCourses}>
+        <TouchableOpacity onPress={goBackToCourses}>
           <View style={styles.backIconView}>
-            <AntDesign name="arrowleft" size={30} color="white"/>
+            <AntDesign name="arrowleft" size={30} color="white" />
           </View>
         </TouchableOpacity>
         <Text style={styles.headerText}>HAFTALAR</Text>

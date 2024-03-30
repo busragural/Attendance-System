@@ -2,7 +2,7 @@ export const GlobalStyles = {
     surfaceColors:{
         primary: "#F6F5F5",
         secondary400: "#1a759f",
-        secondary500: "#184e77",
+        secondary500: "#0077b6",
         secondaryRed: "#52b69a",
         gray: "#DADADA",
         gray50: "#EEEEEE", 

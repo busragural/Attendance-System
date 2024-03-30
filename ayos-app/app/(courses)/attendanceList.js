@@ -1,49 +1,44 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React, { useEffect, useState } from "react";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Card from "../../components/Card";
 import { GlobalStyles } from "../../constants/styles";
+import { AntDesign } from "@expo/vector-icons";
 
 const attendanceList = () => {
   const [attendanceData, setAttendanceData] = useState([]);
-
+  const ip_address = process.env.EXPO_PUBLIC_BASE_IP;
   const params = useLocalSearchParams();
   const courseCode = params.courseCode;
   const courseWeek = params.courseWeek;
+  const router = useRouter();
 
   const [studentInfo, setStudentInfo] = useState({});
 
   const formatDate = (inputDate) => {
-    // Tarihi parçalara bölelim
     const parts = inputDate.split(".");
-
-    // Günlük, ay ve yıl değerlerini alalım
     const day = parts[0];
     const month = parts[1];
     const year = parts[2];
 
-    // Yeni bir tarih nesnesi oluşturalım
     const formattedDate = new Date(`${year}-${month}-${day}`);
-
-    // ISO tarih formatına çevirelim
     const isoFormattedDate = formattedDate.toISOString().split("T")[0];
 
     return isoFormattedDate;
   };
 
   useEffect(() => {
-    const apiUrl = "http://192.168.1.47:8000/attendanceList";
-    const studentsInfoApiUrl = "http://192.168.1.47:8000/studentsInfo";
+    const apiUrl = `http://${ip_address}:8000/attendanceList`;
+    const studentsInfoApiUrl = `http://${ip_address}:8000/studentsInfo`;
 
     const updatedWeek = formatDate(courseWeek);
     console.log(updatedWeek);
     axios
-      .get(`http://192.168.1.47:8000/courseId?courseCode=${courseCode}`)
+      .get(`http://${ip_address}:8000/courseId?courseCode=${courseCode}`)
       .then((response) => {
-        const data = response.data; // Use response.data directly
-
+        const data = response.data;
         const courseId = data.courseId;
 
         AsyncStorage.getItem("auth")
@@ -55,7 +50,7 @@ const attendanceList = () => {
                 },
               })
               .then((response) => {
-                const data = response.data; // Use response.data directly
+                const data = response.data;
                 console.log("hangidata", data);
                 setAttendanceData(data.attendanceList);
 
@@ -68,8 +63,7 @@ const attendanceList = () => {
                 );
                 console.log("attendances", attendances);
                 console.log("studentIds", studentIds);
-                console.log(JSON.stringify(studentIds));
-                // Retrieve student information based on student IDs
+
                 axios
                   .get(
                     `${studentsInfoApiUrl}?studentIds=${studentIds.join(",")}`
@@ -77,16 +71,21 @@ const attendanceList = () => {
                   .then((response) => {
                     const studentInfoMap = {};
                     const studentsInfo = response.data.studentsInfo;
-
+                    console.log("testzzz", studentsInfo);
+                    // Her öğrenci için bilgileri studentInfoMap'e ekle
                     studentsInfo.forEach((student, index) => {
-                      studentInfoMap[student.studentNumber] = {
+                      const studentId = studentIds[index];
+                      const attendance = attendances[index];
+
+                      studentInfoMap[studentId] = {
                         ...student,
-                        attendance: attendances[index],
+                        attendance: attendance
                       };
                     });
 
+                    // State'i güncelle
                     setStudentInfo(studentInfoMap);
-                    console.log("buradaki ne", studentInfoMap);
+
                   })
                   .catch((error) => {
                     console.error(
@@ -107,13 +106,30 @@ const attendanceList = () => {
       .catch((error) => console.error("Error fetching course ID:", error));
   }, [courseCode, courseWeek]);
 
+  const goBackToCourses = () => {
+    router.back();
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Attendance List for Week: {courseWeek}</Text>
+      <View style={styles.headerContainer}>
+        <TouchableOpacity onPress={goBackToCourses}>
+          <View style={styles.backIconView}>
+            <AntDesign name="arrowleft" size={30} color="white" />
+          </View>
+        </TouchableOpacity>
+        <Text style={styles.headerText}>KATILIM LİSTESİ</Text>
+      </View>
 
-      {Object.values(studentInfo).map((item, index) => (
+      {attendanceData.length === 0 ? (
+        <Card>
+          <Text style={styles.cardText}>Kayıt bulunamadı.</Text>
+        </Card>
+      
+    ) : (
+      Object.values(studentInfo).map((item, index) => (
         <Card key={index}>
-          <Text style={styles.cardText}>StudentID: {item.studentNumber}</Text>
+          <Text style={styles.cardText}>StudentID: {item.studentId}</Text>
           <Text style={styles.cardText}>Name: {item.name}</Text>
           <Text style={styles.cardText}>Surname: {item.surname}</Text>
           <Text style={styles.cardText}>Email: {item.email}</Text>
@@ -121,7 +137,8 @@ const attendanceList = () => {
             Attendance: {item.attendance ? "Present" : "Absent"}
           </Text>
         </Card>
-      ))}
+      ))
+    )}
     </ScrollView>
   );
 };
@@ -137,10 +154,24 @@ const styles = StyleSheet.create({
     color: GlobalStyles.surfaceColors.text,
 
   },
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 18,
+    backgroundColor: GlobalStyles.surfaceColors.secondary500,
+  },
+  headerText: {
+    color: GlobalStyles.surfaceColors.primary,
+    fontSize: 24,
+    fontWeight: "bold",
+    marginLeft: "auto",
+    marginRight: "auto",
+  },
   title: {
     fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 16, // Add some margin at the bottom for spacing
+    marginBottom: 16,
     textAlign: "center",
     marginTop: 16,
     color: GlobalStyles.surfaceColors.secondary500,

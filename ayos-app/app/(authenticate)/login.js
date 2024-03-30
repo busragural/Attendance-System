@@ -15,11 +15,13 @@ import { useRouter } from "expo-router";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+
 const login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
+  const ip_address = process.env.EXPO_PUBLIC_BASE_IP;
 
   useEffect(() => {
     const checkToken = async () => {
@@ -39,7 +41,7 @@ const login = () => {
     };
     console.log(user);
     axios
-      .post("http://192.168.1.47:8000/login", user, {
+      .post(`http://${ip_address}:8000/login`, user, {
         headers: {
           "Content-Type": "application/json",
         },
