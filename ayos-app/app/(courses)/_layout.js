@@ -7,6 +7,7 @@ export default function Layout() {
         <Stack.Screen name="courses" />
         <Stack.Screen name="courseDetail" />
         <Stack.Screen name="attendanceList" />
+        <Stack.Screen name="courseStatistics"/>
       </Stack>
     </>
   );

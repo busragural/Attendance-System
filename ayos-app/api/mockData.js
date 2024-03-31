@@ -122,3 +122,64 @@ const addStudents = async () => {
       console.error("Error deleting attendances", error);
     }
   };
+
+
+
+
+  const addDummyAttendance = async() => {
+    try{
+      const objectIdString1 = "66085c57b4b59ac612d3981c";
+      const objectIdString2 = "66085c57b4b59ac612d39820";
+      const tmpcourseId = "66085c56b4b59ac612d39818";
+      const tmpAcaId = "65b3b30720c062cafc7ae35c";
+      const objectId1 = new ObjectId(objectIdString1);
+      const objectId2 = new ObjectId(objectIdString2);
+  
+      const attendance = new Attendance({
+        studentId: objectId1,
+        courseId: tmpcourseId,
+        academianId: tmpAcaId,
+        attendance: true,
+        date: "2024-12-12"
+      })
+      await attendance.save();
+      console.log("eklendi");
+      console.log("Added student:", attendance._id);
+  
+      
+    }
+    catch(error) {
+      console.error("Error adding attendances", error);
+    }
+  }
+  
+  const addDummyAttendanceFor14Weeks = async () => {
+    try {
+      const objectIdString = "66085c57b4b59ac612d39820"; // Öğrenci ID'si
+      const tmpcourseId = "66085c56b4b59ac612d39818"; // Ders ID'si
+      const tmpAcaId = "65b3b30720c062cafc7ae35c"; // Akademisyen ID'si
+  
+      let currentDate = new Date("2024-12-12"); // Başlangıç tarihi
+  
+      for (let week = 1; week <= 14; week++) {
+        const attendance = new Attendance({
+          studentId: new ObjectId(objectIdString),
+          courseId: tmpcourseId,
+          academianId: tmpAcaId,
+          attendance: true, // veya false, katılım durumunu buradan ayarlayabilirsiniz
+          date: currentDate.toISOString().split('T')[0] // Tarihi ISO formatına dönüştür
+        });
+  
+        await attendance.save();
+        console.log(`Week ${week} attendance added for student.`);
+  
+        // Haftanın sonunda bir sonraki haftaya geçmek için tarihi 7 gün artır
+        currentDate.setDate(currentDate.getDate() + 7);
+      }
+  
+      console.log("Attendance for 14 weeks added successfully.");
+    } catch (error) {
+      console.error("Error adding attendances", error);
+    }
+  };
+  

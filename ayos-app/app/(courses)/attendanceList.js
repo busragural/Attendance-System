@@ -129,12 +129,12 @@ const attendanceList = () => {
     ) : (
       Object.values(studentInfo).map((item, index) => (
         <Card key={index}>
-          <Text style={styles.cardText}>StudentID: {item.studentId}</Text>
-          <Text style={styles.cardText}>Name: {item.name}</Text>
-          <Text style={styles.cardText}>Surname: {item.surname}</Text>
-          <Text style={styles.cardText}>Email: {item.email}</Text>
+          <Text style={styles.cardText}>Öğrenci Numarası: {item.studentId}</Text>
+          <Text style={styles.cardText}>Ad: {item.name}</Text>
+          <Text style={styles.cardText}>Soyad: {item.surname}</Text>
+          <Text style={styles.cardText}>E-posta: {item.email}</Text>
           <Text style={styles.cardText}>
-            Attendance: {item.attendance ? "Present" : "Absent"}
+            Katılım Durumu: {item.attendance ? "Katıldı" : "Katılmadı"}
           </Text>
         </Card>
       ))

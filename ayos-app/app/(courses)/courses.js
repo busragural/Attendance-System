@@ -140,6 +140,7 @@ const courses = () => {
           `http://${ip_address}:8000/uploadCsv`,
           {
             csvData: csvData, // CSV verisini gönder
+            courseCode: newCourseCode
           },
           {
             headers: {
@@ -239,10 +240,11 @@ const courses = () => {
 
   const handleStatisticsPress = () => {
     routes.push({
-      pathname: "/statistics",
+      pathname: "/courseStatistics",
       params: {
-        // Pass any necessary parameters for the statistics page
-        courseId: selectedCourse.id, // Example parameter, replace it with the actual parameter you need
+        courseCode: selectedCourse.code,
+        courseStartDate: selectedCourse.startDate,
+        courseWeek: selectedCourse.week,
       },
     });
   };

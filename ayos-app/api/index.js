@@ -369,7 +369,9 @@ app.post("/uploadCsv", async (req, res) => {
 
       // Process the uploaded CSV file
       const csvData = req.body.csvData;
+      const courseCode = req.body.courseCode;
       console.log("CSV data received:", csvData);
+      console.log("Course code recieved", courseCode);
 
       // Parse the CSV data
       const parsedCsv = csvData.split("\n").map(row => row.split(","));
@@ -391,6 +393,16 @@ app.post("/uploadCsv", async (req, res) => {
           });
 
           await existingStudent.save();
+          console.log("Added student:", existingStudent._id);
+
+          // Add student to Participant collection
+          const participant = await Participant.findOneAndUpdate(
+            { courseCode, academianId: userId },
+            { $addToSet: { students: studentId } }, // Add student to students array if not already present
+            { upsert: true, new: true }
+          );
+
+          console.log("Participant updated:", participant);
         }
       }
 
@@ -399,6 +411,111 @@ app.post("/uploadCsv", async (req, res) => {
     });
   } catch (error) {
     console.error("Error uploading and processing CSV:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+
+// Endpoint to get the list of student numbers enrolled in a course for a specific instructor
+app.get("/course/studentNumbers", async (req, res) => {
+  try {
+    console.log("Received studentnumbers request:", req.body);
+
+    // Ä°stekte bulunan akademisyenin kimliÄŸini alÄ±n
+    const token = req.headers.authorization.split(" ")[1];
+    
+    // JWT'yi doÄŸrula ve akademisyen kimliÄŸini Ã§Ä±kar
+    jwt.verify(token, secretKey, async (err, decoded) => {
+      if (err) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+      
+      const academianId = decoded.userId; // DoÄŸrulanan akademisyen kimliÄŸi
+
+      const { courseCode } = req.query;
+
+      // Hem akademisyen kimliÄŸi hem de ders kodu saÄŸlanmÄ±ÅŸ mÄ± diye kontrol edin
+      if (!academianId || !courseCode) {
+        return res.status(400).json({ message: "Invalid parameters" });
+      }
+
+      // Belirtilen akademisyen ve ders iÃ§in katÄ±lÄ±mcÄ± kaydÄ±nÄ± bulun
+      const participant = await Participant.findOne({ academianId, courseCode });
+
+      // KatÄ±lÄ±mcÄ± kaydÄ± bulunamazsa, boÅŸ bir dizi dÃ¶ndÃ¼rÃ¼n
+      if (!participant) {
+        return res.status(200).json({ studentNumbers: [] });
+      }
+
+      // Ders kaydÄ±na kayÄ±tlÄ± Ã¶ÄŸrenci numaralarÄ±nÄ±n dizisini alÄ±n
+      const studentNumbers = participant.students;
+
+      // Ã–ÄŸrenci numaralarÄ± dizisini dÃ¶ndÃ¼rÃ¼n
+      res.status(200).json({ studentNumbers });
+    });
+  } catch (error) {
+    console.error("Error fetching student numbers:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+
+app.get("/course/weeklyAttendance", async (req, res) => {
+  try {
+    const { courseCode } = req.query;
+
+    // courseCode ile eÅŸleÅŸen dersin ObjectId'sini bulun
+    const course = await Course.findOne({ code: courseCode });
+
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    // courseCode ile eÅŸleÅŸen dersin haftalÄ±k katÄ±lÄ±m bilgilerini bulun
+    const weeklyAttendance = await Attendance.aggregate([
+      { $match: { courseId: course._id } },
+      {
+        $group: {
+          _id: { date: "$date", studentId: "$studentId" },
+          attended: { $max: "$attendance" }, // Determine if the student attended on this date
+        },
+      },
+      {
+        $group: {
+          _id: "$_id.date",
+          attendanceData: {
+            $push: {
+              studentId: "$_id.studentId",
+              attended: "$attended",
+            },
+          },
+          totalTrue: {
+            $sum: { $cond: { if: "$attended", then: 1, else: 0 } }, // Total true attendance count for the week
+          },
+          totalFalse: {
+            $sum: { $cond: { if: { $not: "$attended" }, then: 1, else: 0 } }, // Total false attendance count for the week
+          },
+        },
+      },
+    ]);
+
+    // Ã–ÄŸrenci numaralarÄ±nÄ± Ã¶ÄŸrenci belirteÃ§lerinden alarak gÃ¼ncelle
+    for (const attendanceRecord of weeklyAttendance) {
+      const studentsInfo = await Promise.all(
+        attendanceRecord.attendanceData.map(async (record) => {
+          const student = await Student.findOne({ _id: record.studentId });
+          return {
+            studentId: student.studentId,
+            attended: record.attended,
+          };
+        })
+      );
+      attendanceRecord.attendanceData = studentsInfo;
+    }
+
+    res.status(200).json({ weeklyAttendance });
+  } catch (error) {
+    console.error("Error fetching weekly attendance:", error.message);
     res.status(500).json({ message: "Internal server error" });
   }
 });
