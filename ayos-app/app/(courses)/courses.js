@@ -18,6 +18,9 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AntDesign } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
+import Loading from "../../components/Loading";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
+import FAB from "../../components/FAB";
 
 
 
@@ -30,9 +33,14 @@ const courses = () => {
   const [newCourseName, setNewCourseName] = useState("");
   const [newCourseCode, setNewCourseCode] = useState("");
   const [newCourseWeek, setNewCourseWeek] = useState("");
+  const [newCourseLimit, setNewCourseLimit] = useState("");
   const [newCourseStartDate, setNewCourseStartDate] = useState("");
   const [csvFileName, setCsvFileName] = useState(""); // State for CSV file name
   const [csvData, setCsvData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
+
 
   const ip_address = process.env.EXPO_PUBLIC_BASE_IP;
 
@@ -58,6 +66,22 @@ const courses = () => {
     fetchData();
   }, []);
 
+  const showDatePicker = () => {
+    setDatePickerVisible(true);
+  };
+
+  const hideDatePicker = () => {
+    setDatePickerVisible(false);
+  };
+
+  const handleConfirm = (date) => {
+    const formattedDate = date.toISOString().split('T')[0]; // Format the date as desired
+    setSelectedDate(date);
+    setNewCourseStartDate(formattedDate); // Set the formatted date
+    hideDatePicker();
+  };
+
+
   const handlePickCsv = () => {
     DocumentPicker.getDocumentAsync({ type: "text/csv" })
       .then((result) => {
@@ -77,7 +101,7 @@ const courses = () => {
           .then(fileData => {
             // CSV verilerini ayarla
             setCsvData(fileData);
-            console.log("aq",fileData);
+            console.log("aaat", fileData);
           })
           .catch(error => {
             console.error("Error reading file:", error);
@@ -89,7 +113,13 @@ const courses = () => {
   };
 
 
-
+  const handleCardPress = (course) => {
+    if (selectedCourse && selectedCourse.code === course.code) {
+      setSelectedCourse(null);
+    } else {
+      setSelectedCourse(course);
+    }
+  };
 
 
 
@@ -100,11 +130,13 @@ const courses = () => {
         !newCourseName ||
         !newCourseCode ||
         !newCourseStartDate ||
-        !newCourseWeek
+        !newCourseWeek ||
+        !newCourseLimit
       ) {
-        Alert.alert("Hata", "Bos alanlari doldurunuz.");
+        Alert.alert("Hata", "Boş alanları doldurunuz.");
         return;
       }
+      setLoading(true);
 
       // Text inputlardan alınan değerleri gönderme işlemi
       const token = await AsyncStorage.getItem("auth");
@@ -114,6 +146,7 @@ const courses = () => {
           name: newCourseName,
           code: newCourseCode,
           week: newCourseWeek,
+          limit: newCourseLimit,
           startDate: newCourseStartDate,
         },
         {
@@ -134,7 +167,7 @@ const courses = () => {
         console.log("Buraya girebildi mi");
         const formData = new FormData();
         formData.append("csvData", csvData); // CSV verisini formData'ya ekle
-  
+
         // Axios ile uploadCsv endpointine POST isteği gönder
         const uploadCsvResponse = await axios.post(
           `http://${ip_address}:8000/uploadCsv`,
@@ -149,14 +182,17 @@ const courses = () => {
             },
           }
         );
-  
+
         // uploadCsvResponse'dan gelen verileri kontrol et ve gerekli işlemleri yap
         console.log("CSV dosyası yüklendi:", uploadCsvResponse.data);
       }
+      setLoading(false);
       setAddCourseModalVisible(false);
+
     } catch (error) {
       console.error("Error adding new course:", error.message);
     }
+
   };
 
 
@@ -210,20 +246,29 @@ const courses = () => {
 
 
   const handleLogout = async () => {
-    try {
-      await AsyncStorage.removeItem("auth");
-      routes.navigate("/login");
-      Alert.alert("Başarılı", "Çıkış yapıldı.");
-    } catch (error) {
-      console.error("Error logging out:", error.message);
-    }
-  };
-  const handleCardPress = (course) => {
-    if (selectedCourse && selectedCourse.code === course.code) {
-      setSelectedCourse(null);
-    } else {
-      setSelectedCourse(course);
-    }
+    Alert.alert(
+      "Çıkış Yap",
+      "Çıkış yapmak istediğinizden emin misiniz?",
+      [
+        {
+          text: "Hayır",
+          onPress: () => console.log("Cancel Pressed"),
+          style: "cancel",
+        },
+        {
+          text: "Evet",
+          onPress: async () => {
+            try {
+              await AsyncStorage.removeItem("auth");
+              routes.navigate("/login");
+            } catch (error) {
+              console.error("Error logging out:", error.message);
+            }
+          }
+        }
+      ],
+      { cancelable: false }
+    );
   };
 
   const handleWeekInfoPress = () => {
@@ -245,9 +290,33 @@ const courses = () => {
         courseCode: selectedCourse.code,
         courseStartDate: selectedCourse.startDate,
         courseWeek: selectedCourse.week,
+        courseLimit: selectedCourse.limit
       },
     });
   };
+
+  const handleSignatureDetailPress = () => {
+    routes.push({
+      pathname: "/signatureDetail",
+      params: {
+        courseCode: selectedCourse.code,
+        courseStartDate: selectedCourse.startDate,
+        courseWeek: selectedCourse.week,
+      },
+    });
+  };
+
+
+  const handleLimitBreachListPress = () => {
+    routes.push({
+      pathname: "/limitBreachList",
+      params: {
+        courseCode: selectedCourse.code,
+      },
+    });
+  };
+
+
 
   return (
     <View style={styles.container}>
@@ -266,15 +335,15 @@ const courses = () => {
             key={course.code}
             onPress={() => handleCardPress(course)}
           >
-            <Card style={styles.courseCard}>
+            <Card style={styles.courseCard} attendance="attended">
               <TouchableOpacity
                 style={styles.deleteIconContainer}
                 onPress={() => handleDeleteCourse(course)}
               >
-                <AntDesign name="delete" size={28} color="white" />
+                <AntDesign name="delete" size={24} color="white" />
               </TouchableOpacity>
-              <Text style={styles.lecture}>{course.code.toUpperCase()}</Text>
-              <Text style={styles.lecture}>{course.name.toUpperCase()}</Text>
+              <Text style={styles.lectureCode}>{course.code.toUpperCase()}</Text>
+              <Text style={styles.lecture}>{course.name}</Text>
             </Card>
             {selectedCourse && selectedCourse.code === course.code && (
               <View style={styles.optionsContainer}>
@@ -292,20 +361,27 @@ const courses = () => {
                   <Text style={styles.optionText}>İstatistik</Text>
                   <AntDesign name="arrowright" size={24} color="white" />
                 </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleSignatureDetailPress}
+                  style={styles.optionButton}
+                >
+                  <Text style={styles.optionText}>İmza Benzerlikleri</Text>
+                  <AntDesign name="arrowright" size={24} color="white" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={handleLimitBreachListPress}
+                  style={styles.optionButton}
+                >
+                  <Text style={styles.optionText}>Devamsızlık</Text>
+                  <AntDesign name="arrowright" size={24} color="white" />
+                </TouchableOpacity>
+
+
               </View>
             )}
           </TouchableOpacity>
         ))}
-
-        {/* Add Course Button */}
-        <View style={styles.addButtonContainer}>
-          <PrimaryButton
-            style={styles.addButton}
-            onPress={() => setAddCourseModalVisible(true)}
-          >
-            <AntDesign name="plus" size={24} color="white" />
-          </PrimaryButton>
-        </View>
 
         <Modal
           visible={isAddCourseModalVisible}
@@ -315,54 +391,105 @@ const courses = () => {
         >
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
-              <Text style={styles.modalHeaderText}>Yeni Ders Ekle</Text>
+            <TouchableOpacity style={styles.closeButton} onPress={() => setAddCourseModalVisible(false)}>
+              <AntDesign name="close" size={30} color = {GlobalStyles.surfaceColors.dark}  />
+            </TouchableOpacity>
+              <View style={styles.modalHeaderTextContainer}>
+                <Text style={styles.modalHeaderText}>DERS EKLE</Text>
+              </View>
+
               <TextInput
                 style={styles.input}
                 placeholder="Ders Adı"
-                placeholderTextColor="#999"
+                placeholderTextColor={GlobalStyles.surfaceColors.placeholder}
                 onChangeText={(text) => setNewCourseName(text)}
               />
               <TextInput
                 style={styles.input}
                 placeholder="Ders Kodu"
-                placeholderTextColor="#999"
+                placeholderTextColor={GlobalStyles.surfaceColors.placeholder}
                 onChangeText={(text) => setNewCourseCode(text)}
               />
               <TextInput
                 style={styles.input}
-                placeholder="Hafta Sayısı"
-                placeholderTextColor="#999"
+                placeholder="Toplam Hafta Sayısı"
+                placeholderTextColor={GlobalStyles.surfaceColors.placeholder}
+                keyboardType="numeric"
                 onChangeText={(text) => setNewCourseWeek(text)}
               />
+
               <TextInput
                 style={styles.input}
-                placeholder="Başlangıç Haftası"
-                placeholderTextColor="#999"
-                onChangeText={(text) => setNewCourseStartDate(text)}
+                placeholder="Devamsızlık Sınırı (Hafta Sayısı)"
+                keyboardType="numeric"
+                placeholderTextColor={GlobalStyles.surfaceColors.placeholder}
+                onChangeText={(text) => setNewCourseLimit(text)}
               />
 
+              <View style={styles.datePickerContainer}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Başlangıç Tarihi"
+                  value={newCourseStartDate}
+                  editable={false}
+                  placeholderTextColor={GlobalStyles.surfaceColors.placeholder}
+                  onPress={showDatePicker}
+                />
+                <TouchableOpacity style={styles.datePickerButton} onPress={showDatePicker}>
+                  <Text style={styles.datePickerButtonText}>Seç</Text>
+                </TouchableOpacity>
+              </View>
 
+              <DateTimePickerModal
+                isVisible={isDatePickerVisible}
+                mode="date"
+                onConfirm={handleConfirm}
+                onCancel={hideDatePicker}
+                customStyles={{
+                  datePicker: {
+                    backgroundColor: "white",
+                  },
+                  datePickerText: {
+                    color: "black",
+                  },
+                  dateInput: {
+                    color: "black",
+                  },
+                  placeholderText: {
+                    color: "black",
+                  },
+                  btnTextConfirm: {
+                    color: "blue",
+                  },
+                  btnTextCancel: {
+                    color: "red",
+                  },
+                }}
+                themeVariant="light"
+              />
 
-              {/* CSV dosyasını seçme butonu */}
-              <TouchableOpacity onPress={handlePickCsv}>
-                <Text style={styles.uploadButton}>CSV Dosyası Seç</Text>
-              </TouchableOpacity>
-              {/* Seçilen dosya adını gösterme */}
-              {csvFileName !== "" && (
-                <Text style={{ marginTop: 10 }}>
-                  Seçilen CSV Dosyası: {csvFileName}
-                </Text>
-              )}
-
+              <View style={styles.datePickerContainer}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Öğrenci Listesi (CSV)"
+                  value={csvFileName}
+                  editable={false}
+                  placeholderTextColor={GlobalStyles.surfaceColors.placeholder}
+                  onPress={showDatePicker}
+                />
+                <TouchableOpacity style={styles.datePickerButton} onPress={handlePickCsv}>
+                  <Text style={styles.datePickerButtonText}>Seç</Text>
+                </TouchableOpacity>
+              </View>
               <PrimaryButton onPress={handleAddCourse}>Onayla</PrimaryButton>
-
-              <TouchableOpacity onPress={() => setAddCourseModalVisible(false)}>
-                <Text style={styles.modalCloseText}>Kapat</Text>
-              </TouchableOpacity>
+              <Loading visible={loading} />
+      
             </View>
           </View>
         </Modal>
       </ScrollView>
+      <FAB onPress={() => setAddCourseModalVisible(true)} />
+
     </View>
   );
 };
@@ -408,14 +535,20 @@ const styles = StyleSheet.create({
   },
   deleteIconContainer: {
     position: "absolute",
-    top: 8,
-    right: 8,
+    top: 6,
+    right: 6,
     zIndex: 1,
   },
   lecture: {
-    color: "white",
+    color: GlobalStyles.surfaceColors.text,
     fontSize: 16,
+    marginBottom: 10,
+  },
+  lectureCode: {
+    color: GlobalStyles.surfaceColors.text,
+    fontSize: 20,
     marginVertical: 10,
+    fontWeight: "bold",
   },
   buttonContainer: {
     marginLeft: "auto",
@@ -444,37 +577,75 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    borderRadius: 8,
+    elevation: 8,
+    shadowColor: "black",
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    shadowOpacity: 0.25,
+    marginTop: 22,
   },
   modalContent: {
     width: "80%",
-    backgroundColor: "white",
+    backgroundColor: GlobalStyles.surfaceColors.primary,
     padding: 20,
     borderRadius: 10,
     elevation: 5,
+    position: 'relative', 
+  },
+  closeButton: {
+    position: 'absolute',
+    right: 10,
+    top: 10,
+  },
+  modalHeaderTextContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
   },
   modalHeaderText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 10,
+    fontSize: 24,
+    fontWeight: '800',
+    textAlign: 'center',
+    color: GlobalStyles.surfaceColors.dark,
+    margin: 8,
   },
   input: {
     height: 40,
-    borderColor: "gray",
+    borderColor: GlobalStyles.surfaceColors.secondary500,
     borderWidth: 1,
     marginBottom: 10,
     paddingLeft: 10,
+    borderRadius: 8,
+    flexGrow: 1,
   },
   modalCloseText: {
     color: "blue",
     marginTop: 10,
     textAlign: "center",
   },
-  uploadButton: {
-    backgroundColor: '#007bff',
-    color: 'white',
-    padding: 10,
-    borderRadius: 5,
-    textAlign: 'center',
-    marginTop: 10,
+
+  datePickerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+
+
   },
+  datePickerButton: {
+    height: 40,
+    paddingHorizontal: 20,
+    backgroundColor: GlobalStyles.surfaceColors.secondary500,
+    borderRadius: 8,
+    marginLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    textAlignVertical: 'center',
+  },
+  datePickerButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: "700",
+  },
+
+
 });

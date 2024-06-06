@@ -1,6 +1,6 @@
 import React from "react";
 import {
-    Alert,
+  Alert,
   FlatList,
   Image,
   Modal,
@@ -24,8 +24,8 @@ const ImageModal = ({
   selectedImages,
   setSelectedImages,
   removeImage,
-  startWeek,
-  endWeek,
+  firstHalfSelected,
+  secondHalfSelected,
   renderWeekPicker,
   sendImagesToServer,
   calculateWeekDates
@@ -41,10 +41,16 @@ const ImageModal = ({
       <BlurView intensity={100} tint="dark" style={styles.blurContainer}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <PrimaryButton onPress={openCamera}>Fotoğraf Çek</PrimaryButton>
-            <SecondaryButton onPress={openGallery}>
-              Galeriden Seç
-            </SecondaryButton>
+            <TouchableOpacity style={styles.crossButton} onPress={toggleModal} >
+              <AntDesign name="close" size={30} color = {GlobalStyles.surfaceColors.dark} />
+            </TouchableOpacity>
+            <View style={styles.imageButtons} >
+              <PrimaryButton onPress={openCamera}>Fotoğraf Çek</PrimaryButton>
+              <SecondaryButton onPress={openGallery}>
+                Galeriden Seç
+              </SecondaryButton>
+            </View>
+
 
             <View style={styles.imageContainer}>
               {selectedImages.length > 0 ? (
@@ -58,7 +64,7 @@ const ImageModal = ({
                     >
                       <Image
                         source={{ uri: item }}
-                        style={{ width: 100, height: 100, margin: 5 }}
+                        style={{ width: 90, height: 90, margin: 5, borderRadius: 10,}}
                       />
                       <TouchableOpacity
                         style={styles.closeIconContainer}
@@ -75,55 +81,22 @@ const ImageModal = ({
                   horizontal={true}
                   contentContainerStyle={styles.placeholderContainer}
                 >
-                  {Array.from({ length: 5 }, (_, index) => (
+                  {Array.from({ length: 3 }, (_, index) => (
                     <View key={index} style={styles.placeholderImage} />
                   ))}
                 </ScrollView>
               )}
             </View>
 
-            <Text style={styles.weekPickerToggleText}>
-              {startWeek
-                ? `Başlangıç Haftası: ${startWeek}`
-                : "Başlangıç Haftası Seç"}
-            </Text>
-            <Text style={styles.weekPickerToggleText}>
-              {endWeek ? `Bitiş Haftası: ${endWeek}` : "Bitiş Haftası Seç"}
-            </Text>
-
             {renderWeekPicker()}
-            <View style={styles.buttonContainer}>
+            
               <TouchableOpacity
+              style={styles.sendButton}
                 onPress={() => {
-                  toggleModal();
-                }}
-              >
-                <Text style={styles.cancelButton}>Vazgeç</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => {
-                  if (startWeek && endWeek && selectedImages.length > 0) {
-                    const startDateIndex =
-                      calculateWeekDates().indexOf(startWeek);
-                    const endDateIndex =
-                      calculateWeekDates().indexOf(endWeek);
-
-                    if (startDateIndex > endDateIndex) {
-                      Alert.alert(
-                        "Hata",
-                        "Lütfen geçerli başlangıç ve bitiş haftaları seçtiğinizden emin olun.",
-                        [
-                          {
-                            text: "Tamam",
-                            onPress: () => console.log("Tamam pressed"),
-                          },
-                        ]
-                      );
-                      return;
-                    }
-
-                    console.log("Selected Start Week:", startWeek);
-                    console.log("Selected End Week:", endWeek);
+                  if ((firstHalfSelected || secondHalfSelected) && selectedImages.length > 0) {
+                   
+                    console.log("Selected1", firstHalfSelected);
+                    console.log("Selected2", secondHalfSelected);
                     sendImagesToServer(); // Resimleri sunucuya gönder
                     setSelectedImages([]); // Seçilen resimleri temizle
                     toggleModal();
@@ -134,15 +107,16 @@ const ImageModal = ({
                   } else {
                     Alert.alert(
                       "Uyarı",
-                      "Başlangıç ve bitiş haftalarını seçin.",
+                      "Bir dönem seçin.",
                       [{ text: "Tamam" }]
                     );
                   }
                 }}
               >
-                <Text style={styles.closeButton}>Gönder</Text>
+                
+                <Text style={styles.sendButtonText}>Gönder</Text>
               </TouchableOpacity>
-            </View>
+            
           </View>
         </View>
       </BlurView>
@@ -164,13 +138,28 @@ const styles = StyleSheet.create({
     backgroundColor: GlobalStyles.surfaceColors.text,
     padding: 20,
     borderRadius: 10,
+    position: "absolute"
+  },
+  crossButton: {
+    position: 'absolute',
+    right: 10,
+    top: 10,
+    zIndex: 10,
   },
   imageContainer: {
     width: 300,
     height: 100,
+    marginBottom: 18,
+    borderRadius: 10,
+  },
+  imageButtons:{
+    flexDirection: "column",
+    paddingVertical: 20,
   },
   imageItemContainer: {
     position: "relative",
+    borderRadius: 10,
+
   },
   closeIconContainer: {
     position: "absolute",
@@ -196,13 +185,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 15,
   },
-  closeButton: {
-    color: GlobalStyles.surfaceColors.secondary500,
-    textAlign: "center",
-    marginTop: 10,
-    marginLeft: 10,
-    fontSize: 15,
-  },
+  
   placeholderContainer: {
     flexDirection: "row",
     justifyContent: "center",
@@ -210,10 +193,28 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   placeholderImage: {
-    width: 100,
-    height: 100,
+    width: 90,
+    height: 90,
     backgroundColor: GlobalStyles.surfaceColors.gray,
     margin: 5,
+    borderRadius: 10,
+
+  },
+  sendButton:{
+    color: GlobalStyles.surfaceColors.text,
+    backgroundColor: GlobalStyles.surfaceColors.secondaryRed,
+    paddingVertical: 10,
+    elevation: 3,
+    borderWidth: 2,
+    borderColor: GlobalStyles.surfaceColors.secondaryRed,
+    borderRadius: 10,
+    marginVertical: 5,
+    overflow: "hidden",
+  },
+  sendButtonText: {
+    color: GlobalStyles.surfaceColors.text,
+    textAlign: "center",
+    fontSize: 16,
   },
 });
 

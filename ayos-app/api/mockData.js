@@ -16,6 +16,24 @@ const addStudents = async () => {
     console.error("Error adding students", error);
   }
 };
+
+const addStudents2 = async () => {
+  try {
+    for (let i = 1; i <= 15; i++) {
+      const student = new Student({
+        name: `StudentName${i}`,
+        surname: `StudentSurname${i}`,
+        email: `student${i}@example.com`,
+        studentId: `1001000${i}`
+      });
+      await student.save();
+    }
+    console.log("150 students added successfully");
+  } catch (error) {
+    console.error("Error adding students", error);
+  }
+};
+
   // Function to add 10 instructors
   const addInstructors = async () => {
     try {

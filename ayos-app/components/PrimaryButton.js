@@ -30,12 +30,15 @@ const styles = StyleSheet.create({
   buttonText: {
     color: GlobalStyles.surfaceColors.primary,
     textAlign: "center",
-    fontSize: 15,
-    marginHorizontal:10
+    fontSize: 16,
+    marginHorizontal:10,
+    fontWeight: "700"
   },
   buttonOuterContainer: {
+    borderWidth: 2,
+    borderColor: GlobalStyles.surfaceColors.secondary400,
     borderRadius: 10,
-    margin: 5,
+    marginVertical: 5,
     overflow: "hidden",
   },
   pressed: {

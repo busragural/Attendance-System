@@ -8,6 +8,8 @@ export default function Layout() {
         <Stack.Screen name="courseDetail" />
         <Stack.Screen name="attendanceList" />
         <Stack.Screen name="courseStatistics"/>
+        <Stack.Screen name="signatureDetail"/>
+        <Stack.Screen name="limitBreachList"/>
       </Stack>
     </>
   );

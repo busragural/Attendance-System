@@ -20,7 +20,10 @@ const courseSchema = new mongoose.Schema({
   },
   week:{
     type: Number,
-  }
+  },
+   limit:{
+    type: Number,
+   }
 });
 
 const Course = mongoose.model("Course", courseSchema);

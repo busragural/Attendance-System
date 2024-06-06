@@ -3,20 +3,20 @@ const mongoose = require('mongoose');
 const studentSchema = new mongoose.Schema({
     name:{
         type: String,
-        required: true,
+        //required: true,
     },
     surname:{
         type: String,
-        required: true,
+        //required: true,
     },
     email:{
         type: String,
-        required: true,
+        //required: true,
         unique: true,
     },
     studentId:{
         type: String,
-        required: true,
+        //required: true,
     }
 });
 

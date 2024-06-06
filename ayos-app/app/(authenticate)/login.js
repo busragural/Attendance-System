@@ -6,6 +6,7 @@ import {
   Text,
   TextInput,
   View,
+  TouchableOpacity,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import PrimaryButton from "../../components/PrimaryButton";
@@ -14,6 +15,7 @@ import ErrorText from "../../components/ErrorText";
 import { useRouter } from "expo-router";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Notifications from 'expo-notifications';
 
 
 const login = () => {
@@ -30,7 +32,7 @@ const login = () => {
         router.replace("(courses)/courses");
       }
     };
-  
+
     checkToken();
   }, []);
 
@@ -57,25 +59,41 @@ const login = () => {
       });
   };
 
+  const handleRegister = () => {
+    router.replace("/register");
+  };
+
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
+  });
+
   return (
     <KeyboardAvoidingView
       style={styles.allScreen}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : -200} // Adjust the offset for Android
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20} // Adjust the offset for Android
     >
+
       <View style={styles.loginContainer}>
         <Image
           style={styles.image}
           source={require("../../assets/images/star.png")}
         />
+        <Text style={styles.title} >AYOS</Text>
         <View style={styles.inputArea}>
           <View style={styles.inputFields}>
             <View style={styles.inputField}>
               {error && <ErrorText>{error}</ErrorText>}
-              <Text style={styles.label}>Mail</Text>
+              <Text style={styles.label}>Email</Text>
               <TextInput
                 style={styles.input}
                 keyboardType="email-address"
+                placeholder="email@yildiz.edu.tr"
+                placeholderTextColor={GlobalStyles.surfaceColors.placeholder}
                 onChangeText={(value) => setEmail(value)}
               />
             </View>
@@ -84,6 +102,8 @@ const login = () => {
               <Text style={styles.label}>Şifre</Text>
               <TextInput
                 style={styles.input}
+                placeholder="*******"
+                placeholderTextColor={GlobalStyles.surfaceColors.placeholder}
                 secureTextEntry={true}
                 onChangeText={(value) => setPassword(value)}
               />
@@ -92,7 +112,17 @@ const login = () => {
             <View style={styles.buttonContainer}>
               <PrimaryButton onPress={handleLogin}>Giriş Yap</PrimaryButton>
             </View>
+
+
           </View>
+
+          <View style={styles.registerContainer}>
+            <Text style={styles.registerText}>Hesabınız yok mu?  </Text>
+            <TouchableOpacity onPress={handleRegister}>
+              <Text style={styles.registerButton}>Kayıt olun.</Text>
+            </TouchableOpacity>
+          </View>
+
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -104,44 +134,53 @@ export default login;
 const styles = StyleSheet.create({
   allScreen: {
     flex: 1,
+    backgroundColor: GlobalStyles.surfaceColors.primary,
   },
 
   loginContainer: {
     flex: 1,
-    backgroundColor: GlobalStyles.surfaceColors.primary,
-    //padding: 20,
     justifyContent: "center",
     alignItems: "center",
-    paddingBottom: Platform.OS === "android" ? 20 : 0,
+    //paddingBottom: Platform.OS === "android" ? 20 : 0,
   },
+
   title: {
-    fontWeight: "bold",
-    color: GlobalStyles.surfaceColors.secondary500,
-    fontSize: 32,
+    fontWeight: "900",
+    color: GlobalStyles.surfaceColors.secondary400,
+    fontSize: 60,
     textAlign: "center",
-    paddingTop: 50,
-    paddingBottom: 20,
+    paddingVertical: 30,
   },
   image: {
     flex: 2,
     width: "100%",
-    height: Platform.OS === "ios" ? "100%" : "50%",
+    //height: Platform.OS === "ios" ? "100%" : "50%",
+    height: "100%",
     resizeMode: "contain",
-    marginTop: 20,
-    marginBottom: 10,
-    //backgroundColor: GlobalStyles.surfaceColors.secondary500,
+    marginTop: 30,
+
   },
   inputArea: {
     flex: 3,
-    justifyContent: "center",
     width: "100%",
+    alignItems: "center",
+    backgroundColor: GlobalStyles.surfaceColors.primary,
+    elevation: Platform.OS === "android" ? 15 : 20,  
+    shadowColor: "black",
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: Platform.OS === "android" ? 30 : 6,  
+    shadowOpacity: Platform.OS === "android" ? 0.75 : 0.55, 
+    marginHorizontal: 16,
+    borderRadius: 16,
+    paddingHorizontal: 8,
   },
   inputFields: {
     flexDirection: "column",
-    //backgroundColor: GlobalStyles.surfaceColors.gray50,
     borderRadius: 10,
     padding: 30,
     width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
   },
   inputField: {
     margin: 5,
@@ -149,7 +188,7 @@ const styles = StyleSheet.create({
   },
   label: {
     color: GlobalStyles.surfaceColors.dark,
-    fontSize: 15,
+    fontSize: 16,
   },
   input: {
     borderWidth: 2,
@@ -160,6 +199,26 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   buttonContainer: {
-    paddingTop: 10,
+    paddingTop: 20,
+    width: '100%',
   },
+  registerButton: {
+    color: GlobalStyles.surfaceColors.secondaryRed,
+    textAlign: "center",
+    marginTop: 10,
+    fontSize: 16,
+    fontWeight: "bold"
+  },
+  registerContainer:{
+    flexDirection: "row",
+    
+  },
+  registerText:{
+    color: GlobalStyles.surfaceColors.dark,
+    textAlign: "center",
+    marginTop: 10,
+    fontSize: 16,
+    
+  }
+
 });

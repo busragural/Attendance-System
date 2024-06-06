@@ -1,9 +1,12 @@
 import { Dimensions, StyleSheet, View } from "react-native";
 import { GlobalStyles } from "../constants/styles";
 
-function Card({children}) {
-  return <View style= {styles.card}>{children}</View>;
-}
+function Card({children,attendance}) {
+  return (
+    <View style={[styles.card, attendance === 'attended' ? styles.attendedCard : styles.notAttendedCard]}>
+      {children}
+    </View>
+  );}
 
 export default Card;
 
@@ -13,7 +16,6 @@ const styles  = StyleSheet.create({
         marginTop: deviceWidth < 380 ? 12 : 24,
         marginHorizontal: 14,
         padding: 16,
-        backgroundColor: GlobalStyles.surfaceColors.secondaryRed,
         borderRadius: 8,
         elevation: 8,
         shadowColor: "black",
@@ -21,6 +23,13 @@ const styles  = StyleSheet.create({
         shadowRadius: 6,
         shadowOpacity: 0.25,
         justifyContent: "center",
-        alignItems: "flex-start"
+        //alignItems: "flex-start"
+      },
+
+      attendedCard: {
+        backgroundColor: GlobalStyles.surfaceColors.secondaryRed,
+      },
+      notAttendedCard: {
+        backgroundColor: GlobalStyles.surfaceColors.error,
       },
 });
