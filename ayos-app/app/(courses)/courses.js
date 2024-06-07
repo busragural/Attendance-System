@@ -316,6 +316,15 @@ const courses = () => {
     });
   };
 
+  const handleViewParticipants = (course) => {
+    routes.push({
+      pathname: "/courseParticipants",
+      params: {
+        courseCode: course.code,
+      },
+    });
+  };
+
 
 
   return (
@@ -330,58 +339,71 @@ const courses = () => {
           </TouchableOpacity>
         </View>
 
-        {userCourses.map((course) => (
-          <TouchableOpacity
-            key={course.code}
-            onPress={() => handleCardPress(course)}
-          >
-            <Card style={styles.courseCard} attendance="attended">
-              <TouchableOpacity
-                style={styles.deleteIconContainer}
-                onPress={() => handleDeleteCourse(course)}
-              >
-                <AntDesign name="delete" size={24} color="white" />
-              </TouchableOpacity>
-              <Text style={styles.lectureCode}>{course.code.toUpperCase()}</Text>
-              <Text style={styles.lecture}>{course.name}</Text>
-            </Card>
-            {selectedCourse && selectedCourse.code === course.code && (
-              <View style={styles.optionsContainer}>
-                <TouchableOpacity
-                  onPress={handleWeekInfoPress}
-                  style={styles.optionButton}
-                >
-                  <Text style={styles.optionText}>Hafta Bilgisi</Text>
-                  <AntDesign name="arrowright" size={24} color="white" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={handleStatisticsPress}
-                  style={styles.optionButton}
-                >
-                  <Text style={styles.optionText}>İstatistik</Text>
-                  <AntDesign name="arrowright" size={24} color="white" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={handleSignatureDetailPress}
-                  style={styles.optionButton}
-                >
-                  <Text style={styles.optionText}>İmza Benzerlikleri</Text>
-                  <AntDesign name="arrowright" size={24} color="white" />
-                </TouchableOpacity>
+        <ScrollView contentContainerStyle={styles.contentContainer} >
 
-                <TouchableOpacity
-                  onPress={handleLimitBreachListPress}
-                  style={styles.optionButton}
-                >
-                  <Text style={styles.optionText}>Devamsızlık</Text>
-                  <AntDesign name="arrowright" size={24} color="white" />
-                </TouchableOpacity>
+          {userCourses.map((course) => (
+            <TouchableOpacity
+              key={course.code}
+              onPress={() => handleCardPress(course)}
+            >
+              <Card style={styles.courseCard} attendance="attended">
+
+                <View style={styles.iconsContainer}>
+                  <TouchableOpacity
+                    style={styles.deleteIconContainer}
+                    onPress={() => handleDeleteCourse(course)}
+                  >
+                    <AntDesign name="delete" size={24} color="white" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.viewIconContainer}
+                    onPress={() => handleViewParticipants(course)}
+                  >
+                    <AntDesign name="eyeo" size={28} color="white" />
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.lectureCode}>{course.code.toUpperCase()}</Text>
+                <Text style={styles.lecture}>{course.name}</Text>
+              </Card>
+              {selectedCourse && selectedCourse.code === course.code && (
+                <View style={styles.optionsContainer}>
+                  <TouchableOpacity
+                    onPress={handleWeekInfoPress}
+                    style={styles.optionButton}
+                  >
+                    <Text style={styles.optionText}>Hafta Bilgisi</Text>
+                    <AntDesign name="arrowright" size={24} color="white" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={handleStatisticsPress}
+                    style={styles.optionButton}
+                  >
+                    <Text style={styles.optionText}>İstatistik</Text>
+                    <AntDesign name="arrowright" size={24} color="white" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={handleSignatureDetailPress}
+                    style={styles.optionButton}
+                  >
+                    <Text style={styles.optionText}>İmza Benzerlikleri</Text>
+                    <AntDesign name="arrowright" size={24} color="white" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={handleLimitBreachListPress}
+                    style={styles.optionButton}
+                  >
+                    <Text style={styles.optionText}>Devamsızlık</Text>
+                    <AntDesign name="arrowright" size={24} color="white" />
+                  </TouchableOpacity>
 
 
-              </View>
-            )}
-          </TouchableOpacity>
-        ))}
+                </View>
+              )}
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
         <Modal
           visible={isAddCourseModalVisible}
@@ -391,9 +413,9 @@ const courses = () => {
         >
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
-            <TouchableOpacity style={styles.closeButton} onPress={() => setAddCourseModalVisible(false)}>
-              <AntDesign name="close" size={30} color = {GlobalStyles.surfaceColors.dark}  />
-            </TouchableOpacity>
+              <TouchableOpacity style={styles.closeButton} onPress={() => setAddCourseModalVisible(false)}>
+                <AntDesign name="close" size={30} color={GlobalStyles.surfaceColors.dark} />
+              </TouchableOpacity>
               <View style={styles.modalHeaderTextContainer}>
                 <Text style={styles.modalHeaderText}>DERS EKLE</Text>
               </View>
@@ -475,7 +497,7 @@ const courses = () => {
                   value={csvFileName}
                   editable={false}
                   placeholderTextColor={GlobalStyles.surfaceColors.placeholder}
-                  onPress={showDatePicker}
+                  onPress={handlePickCsv}
                 />
                 <TouchableOpacity style={styles.datePickerButton} onPress={handlePickCsv}>
                   <Text style={styles.datePickerButtonText}>Seç</Text>
@@ -483,7 +505,7 @@ const courses = () => {
               </View>
               <PrimaryButton onPress={handleAddCourse}>Onayla</PrimaryButton>
               <Loading visible={loading} />
-      
+
             </View>
           </View>
         </Modal>
@@ -527,16 +549,28 @@ const styles = StyleSheet.create({
   logoutIcon: {
     color: GlobalStyles.surfaceColors.primary,
   },
+  contentContainer: {
+    flexGrow: 1,
+    paddingVertical: 6,
+
+  },
   courseCard: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     padding: 16,
   },
-  deleteIconContainer: {
+  iconsContainer:{
     position: "absolute",
+    flexDirection: "row",
     top: 6,
     right: 6,
+    gap: 6
+  },
+  deleteIconContainer: {
+    zIndex: 1,
+  },
+  viewIconContainer: {
     zIndex: 1,
   },
   lecture: {
@@ -591,7 +625,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 10,
     elevation: 5,
-    position: 'relative', 
+    position: 'relative',
   },
   closeButton: {
     position: 'absolute',

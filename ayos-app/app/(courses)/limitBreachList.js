@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ScrollView, TouchableOpacity, Alert} from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -11,21 +11,17 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
 
-
-
 const LimitBreachList = () => {
     const router = useRouter();
     const params = useLocalSearchParams();
     const courseCode = params.courseCode;
     const ip_address = process.env.EXPO_PUBLIC_BASE_IP;
-    const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [studentAttendanceTotal, setStudentAttendanceTotal] = useState({});
-    const [weeklyAttendance, setWeeklyAttendance] = useState([]);
     const [exceededLimitStudents, setExceededLimitStudents] = useState([]);
     const [atLimitStudents, setAtLimitStudents] = useState([]);
     const [showExceededLimit, setShowExceededLimit] = useState(true);
     const [showAtLimit, setShowAtLimit] = useState(true);
+    const [menuVisible, setMenuVisible] = useState(false);
 
 
 
@@ -64,23 +60,23 @@ const LimitBreachList = () => {
     };
 
     const exportStudentsToCSV = async (students) => {
-        let csvContent ="Name,Surname,Email,Student ID,Absences\n";  
-    
+        let csvContent = "Name,Surname,Email,Student ID,Absences\n";
+
         students.forEach(student => {
             const row = `${student.name},${student.surname},${student.email},${student.studentId},${student.absences}`;
             csvContent += row + "\n";
         });
-    
+
         const fileName = `${FileSystem.cacheDirectory}AbsentStudents.csv`;
-    
+
         await FileSystem.writeAsStringAsync(fileName, csvContent, { encoding: FileSystem.EncodingType.UTF8 });
-    
+
         await Sharing.shareAsync(fileName, {
             mimeType: 'text/csv',
             dialogTitle: 'Share your CSV file',
             UTI: 'public.csv'
         });
-    
+
         return fileName;
     };
 
@@ -95,47 +91,98 @@ const LimitBreachList = () => {
         exportStudentsToCSV(studentsToExport);
     };
 
+    const confirmSendEmails = () => {
+        Alert.alert(
+            "E-posta Gönderme Onayı",
+            "Seçili öğrencilere uyarı e-postalarını göndermek istediğinizden emin misiniz?",
+            [
+                { text: "Hayır", style: "cancel" },
+                { text: "Evet", onPress: () => handleSendEmails() }
+            ],
+            { cancelable: true }
+        );
+    };
+
+    
     const handleSendEmails = async () => {
+       
         try {
-          const token = await AsyncStorage.getItem("auth");
-          const postData = {
-            exceededLimitStudents: exceededLimitStudents,
-            atLimitStudents: atLimitStudents,
-            courseCode: courseCode,
-          };
-      
-          const response = await axios.post(`http://${ip_address}:8000/sendAttendanceWarnings`, postData, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-      
-          if (response.status === 200) {
-            alert('Emails sent successfully');
-          }
+            const token = await AsyncStorage.getItem("auth");
+            const postData = {
+                exceededLimitStudents: exceededLimitStudents,
+                atLimitStudents: atLimitStudents,
+                courseCode: courseCode,
+            };
+
+            const response = await axios.post(`http://${ip_address}:8000/sendAttendanceWarnings`, postData, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (response.status === 200) {
+                alert('Email gönderme başarılı');
+
+               
+            }
         } catch (error) {
-          console.error('Failed to send emails:', error.message);
-          alert('Failed to send emails');
+            console.error('Failed to send emails:', error.message);
+            alert('Email gönderilirken hata oluştu.');
+            
+            
         }
-      };
+    };
 
 
 
     return (
         <ScrollView style={styles.container}>
+
             <View style={styles.headerContainer}>
+
                 <TouchableOpacity onPress={goBackToCourses}>
                     <View style={styles.backIconView}>
                         <AntDesign name="arrowleft" size={30} color="white" />
                     </View>
                 </TouchableOpacity>
                 <Text style={styles.headerText}>DEVAMSIZLIKLAR</Text>
+                <TouchableOpacity onPress={() => setMenuVisible(!menuVisible)}>
+                    <View style={styles.menuIconView}>
+                        <AntDesign name="bars" size={30} color="white" />
+                    </View>
+                </TouchableOpacity>
 
-                <TouchableOpacity onPress={handleSendEmails}>
+
+
+
+                {/* <TouchableOpacity onPress={handleSendEmails}>
                     <View style={styles.backIconView}>
                         <AntDesign name="export" size={30} color="white" />
                     </View>
-                </TouchableOpacity>
-                
+                </TouchableOpacity> */}
+
             </View>
+
+            {menuVisible && (
+                <TouchableOpacity style={styles.backdrop} onPress={() => setMenuVisible(false)}>
+                    <View style={styles.menuOptions} onStartShouldSetResponder={() => true}>
+                        <TouchableOpacity style={styles.menuOption} onPress={() => {
+                            handleExportToCSV();
+                            setMenuVisible(false);
+                        }}>
+                            <AntDesign name="file1" size={24} color={GlobalStyles.surfaceColors.dark} style={styles.menuIcon} />
+                            <Text style={styles.menuOptionText}>Dışarı Aktar</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.menuOption} onPress={() => {
+                            confirmSendEmails();
+                            setMenuVisible(false);
+                        }}>
+                            <AntDesign name="mail" size={24} color={GlobalStyles.surfaceColors.dark}  style={styles.menuIcon} />
+                            <Text style={styles.menuOptionText}>Mail Gönder</Text>
+                        </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            )}
+
+
             <Loading visible={loading} />
             {!loading && (
                 <ScrollView contentContainerStyle={styles.contentContainer}>
@@ -249,6 +296,48 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         textAlign: 'center',
         marginVertical: 10,
-    }
+    },
+    menuOptions: {
+        position: 'absolute',
+        right: 10,
+        top: 50,
+        backgroundColor: GlobalStyles.surfaceColors.primary,
+        borderRadius: 10,
+        padding: 16,
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+        zIndex: 1000,
+    },
+    menuOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 10,
+        borderBottomColor: "#ddd",
+        borderBottomWidth: 1
+    },
+    menuIcon: {
+        marginRight: 10,
+    },
+    menuOptionText: {
+        fontSize: 16,
+        color: GlobalStyles.surfaceColors.dark,
+        padding: 8,
+        fontWeight: "400",
+    },
+    backdrop: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.4)', // Semi-transparent
+        zIndex: 999 // Just below the menu
+    },
 });
 

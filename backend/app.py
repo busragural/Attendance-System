@@ -7,6 +7,8 @@ import cv2
 import pytesseract
 import detection
 import ssl
+import os
+os.environ['MPLBACKEND'] = 'agg'
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -43,6 +45,7 @@ def upload_images():
                 'scores': info['scores'].tolist(),  # Convert numpy array to list for JSON serialization
                 'groups': groups
             }
+            
             print("image_Results: ",image_results)
         results[f'image_{idx}'] = image_results
 

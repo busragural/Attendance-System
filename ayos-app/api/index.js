@@ -36,7 +36,7 @@ const Signature = require("./models/signatureSchema");
 
 mongoose
   .connect(
-    "Uri",
+    "url",
     {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -500,15 +500,16 @@ app.post("/uploadCsv", async (req, res) => {
           await existingStudent.save();
           console.log("Added student:", existingStudent._id);
 
-          // Add student to Participant collection
-          const participant = await Participant.findOneAndUpdate(
-            { courseCode, academianId: userId },
-            { $addToSet: { students: studentId } }, // Add student to students array if not already present
-            { upsert: true, new: true }
-          );
-
-          console.log("Participant updated:", participant);
+         
         }
+         // Add student to Participant collection
+         const participant = await Participant.findOneAndUpdate(
+          { courseCode, academianId: userId },
+          { $addToSet: { students: studentId } }, // Add student to students array if not already present
+          { upsert: true, new: true }
+        );
+
+        console.log("Participant updated:", participant);
       }
 
       // Return a success message
@@ -778,25 +779,23 @@ app.post("/addAttendance", async (req, res) => {
 
 
 app.post("/updateAttendance", async (req, res) => {
-  const { studentId, courseCode, attendance } = req.body;
+  const { studentId, courseCode, attendance, date } = req.body; // Tarih bilgisini al
   const token = req.headers.authorization.split(" ")[1];
   try {
-    // Token doğrulama ve kullanıcı ID'si alma
     jwt.verify(token, secretKey, async (err, decoded) => {
       if (err) {
         return res.status(401).json({ message: "Invalid token" });
       }
       const academianId = decoded.userId;
-
       const course = await Course.findOne({ code: courseCode });
       if (!course) {
         return res.status(404).json({ message: "Course not found" });
       }
       const courseId = course._id;
 
-      // Yoklama verisini bul ve güncelle
+      // Tarih bilgisini kullanarak doğru yoklama kaydını bul ve güncelle
       await Attendance.updateOne(
-        { academianId, studentId, courseId },
+        { academianId, studentId, courseId, date }, // Tarih bilgisini sorguya dahil et
         { $set: { attendance } }
       );
 
@@ -1013,19 +1012,21 @@ app.post('/sendAttendanceWarnings', async (req, res) => {
   const { exceededLimitStudents, atLimitStudents, courseCode } = req.body;
   const token = req.headers.authorization.split(' ')[1]; 
   const decoded = jwt.verify(token, secretKey);
-  const instructorEmail = decoded.email;
+  const userId = decoded.userId;
 
-  const instructor = await Course.findOne({ email: instructorEmail });
+  const instructor = await Instructor.findById(userId);
     if (!instructor) {
       return res.status(404).json({ message: "Instructor not found" });
     }
 
+    console.log("test:", instructor.password)
+    console.log("instructordecodedEmail", instructor.email);
 
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: instructorEmail,
-      pass: instructor.password
+      user: instructor.email,
+      pass: 'kyrqecdphdymvcxq'
     }
   });
 
@@ -1033,7 +1034,7 @@ app.post('/sendAttendanceWarnings', async (req, res) => {
     // Send emails to students who have exceeded the limit
     for (const student of exceededLimitStudents) {
       await transporter.sendMail({
-        from: instructorEmail,
+        from: instructor.email,
         to: student.email,
         subject: `${courseCode} Devamsızlık Sınır Aşımı Hk.`,
         text: `${student.studentId} numaralı öğrenci, devamsızlık sınırını aştınız. Lütfen öğretim üyesi ile iletişime geçiniz.`,
@@ -1043,7 +1044,7 @@ app.post('/sendAttendanceWarnings', async (req, res) => {
 
     for (const student of atLimitStudents) {
       await transporter.sendMail({
-        from: instructorEmail,
+        from: instructor.email,
         to: student.email,
         subject:  `${courseCode} Devamsızlık Sınırı Hk.`,
         text: `${student.studentId} numaralı öğrenci, devamsızlık sınırındasınız. Lütfen öğretim üyesi ile iletişime geçiniz.`,
@@ -1054,5 +1055,44 @@ app.post('/sendAttendanceWarnings', async (req, res) => {
   } catch (error) {
     console.error('Failed to send emails:', error);
     res.status(500).json({ message: 'Failed to send emails' });
+  }
+});
+
+app.get("/user/courseParticipants/:courseCode", async (req, res) => {
+  const { courseCode } = req.params;
+  try {
+    const token = req.headers.authorization.split(' ')[1]; // Bearer token'ı alın
+    const decodedToken = jwt.verify(token, secretKey); // Token'ı doğrulayın
+    const userId = decodedToken.userId; // Kullanıcı ID'sini alın
+
+    // Katılımcıları bul
+    const participants = await Participant.find({ courseCode: courseCode });
+
+    console.log("parti", participants)
+
+    // Eğer katılımcı bulunamazsa
+    if (!participants) {
+      return res.status(404).json({ message: "Katılımcı bulunamadı" });
+    }
+
+    // Öğrenci numaralarını al
+    const studentNumbers = participants[0].students;
+
+
+    const studentsData = await Promise.all(
+      studentNumbers.map(async (studentNumber) => {
+        const student = await Student.findOne({ studentId: studentNumber });
+        return {
+          studentNumber: student.studentId,
+          name: student.name,
+          surname: student.surname,
+        };
+      })
+    );
+
+    res.status(200).json({ participants: studentsData });
+  } catch (error) {
+    console.error("Katılımcı listesi alınırken hata oluştu:", error.message);
+    res.status(500).json({ message: "Katılımcı listesi alınırken hata oluştu" });
   }
 });

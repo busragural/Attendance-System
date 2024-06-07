@@ -64,26 +64,27 @@ const courseDetail = () => {
 
   }, []);
 
-  useEffect(() => {
-    DeviceMotion.addListener(motionData => {
-      const { alpha, beta, gamma } = motionData.rotation;
+  // useEffect(() => {
+  //   DeviceMotion.addListener(motionData => {
+  //     const { alpha, beta, gamma } = motionData.rotation;
 
-      // alpha: dönüş açısı, beta: ön-arka eğim, gamma: yan eğim
-      if (gamma > 45) {
-        setDeviceOrientation('right');
-      } else if (gamma < -45) {
-        setDeviceOrientation('left');
-      } else if (beta > 45) {
-        setDeviceOrientation('upsideDown');
-      } else {
-        setDeviceOrientation('portrait');
-      }
-    });
 
-    return () => {
-      DeviceMotion.removeAllListeners();
-    };
-  }, []);
+  //     // // alpha: dönüş açısı, beta: ön-arka eğim, gamma: yan eğim
+  //     // if (gamma > 45) {
+  //     //   setDeviceOrientation('right');
+  //     // } else if (gamma < -45) {
+  //     //   setDeviceOrientation('left');
+  //     // } else if (beta > 45) {
+  //     //   setDeviceOrientation('upsideDown');
+  //     // } else {
+  //     //   setDeviceOrientation('portrait');
+  //     // }
+  //   });
+
+  //   return () => {
+  //     DeviceMotion.removeAllListeners();
+  //   };
+  // }, []);
 
   useEffect(() => {
     fetchWeeklyAttendanceSummary(false); // İlk yüklemede refreshing olmasın
@@ -139,7 +140,7 @@ const courseDetail = () => {
         path: "images",
       },
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      allowsEditing: false,
       aspect: [15, 11],
 
     };
@@ -150,25 +151,26 @@ const courseDetail = () => {
       const selectedImage = result.assets[0];
       const selectedImageUri = selectedImage.uri;
 
-      // Fotoğrafı dinamik olarak döndürme
-      let rotation = 0;
-      if (deviceOrientation === 'right') {
-        rotation = -90;
-      } else if (deviceOrientation === 'left') {
-        rotation = 90;
-      } else if (deviceOrientation === 'upsideDown') {
-        rotation = 180;
-      }
-      console.log("orie", deviceOrientation);
+      // // Fotoğrafı dinamik olarak döndürme
+      // let rotation = 0;
+      // if (deviceOrientation === 'right') {
+      //   rotation = -90;
+      // } else if (deviceOrientation === 'left') {
+      //   rotation = 90;
+      // } else if (deviceOrientation === 'upsideDown') {
+      //   rotation = 180;
+      // }
+      // console.log("orie", deviceOrientation);
 
 
       if (!selectedImageUri.endsWith('.jpg')) {
         // If the image is not in JPEG format, manipulate it to convert to JPEG
         const manipResult = await ImageManipulator.manipulateAsync(
           selectedImage.uri,
-          [{ rotate: rotation }],
+          [],
+          //[{ rotate: rotation }],
           // Resize action instead of format
-          { compress: 1, format: ImageManipulator.SaveFormat.JPEG } // Adjust compress factor if needed
+          { compress: 1, format: ImageManipulator.SaveFormat.PNG } // Adjust compress factor if needed
         );
         setSelectedImages((prevImages) => [...prevImages, manipResult.uri]);
         //setSelectedImages([manipResult.uri]);

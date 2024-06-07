@@ -15,6 +15,7 @@ const attendanceList = () => {
   const params = useLocalSearchParams();
   const courseCode = params.courseCode;
   const courseWeek = params.courseWeek;
+  console.log("couea", courseWeek);
   const router = useRouter();
 
   const [studentInfo, setStudentInfo] = useState({});
@@ -140,19 +141,21 @@ const attendanceList = () => {
       studentInfoCopy[objectId].attendance = updatedAttendance; // Yeni durumu kopyaya uygula
 
       setStudentInfo(studentInfoCopy); // State'i güncelle
-      updateAttendanceOnServer(objectId, updatedAttendance); // Server'a güncellemeyi gönder
+      updateAttendanceOnServer(objectId, updatedAttendance, formatDate(courseWeek)); // Server'a güncellemeyi gönder
     } else {
       console.error("Student not found with ID:", studentId);
     }
   };
 
-  const updateAttendanceOnServer = async (studentId, attendance) => {
+  const updateAttendanceOnServer = async (studentId, attendance, date ) => {
+    console.log("attendance ne olu", attendance)
     try {
       const token = await AsyncStorage.getItem("auth");
       await axios.post(`http://${ip_address}:8000/updateAttendance`, {
         studentId,
         courseCode,
-        attendance
+        attendance,
+        date 
       }, {
         headers: {
           Authorization: `Bearer ${token}`
