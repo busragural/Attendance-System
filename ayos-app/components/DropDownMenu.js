@@ -23,7 +23,7 @@ const DropdownMenu = ({ onSendEmails, onExportCSV }) => {
                 <TouchableOpacity
                     style={styles.modalOverlay}
                     activeOpacity={1}
-                    onPressOut={toggleMenu}  // Modal dışına tıklanınca menüyü kapat
+                    onPressOut={toggleMenu} 
                 >
                     <View style={styles.dropdownMenu}>
                         <TouchableOpacity style={styles.menuItem} onPress={() => {
@@ -62,8 +62,8 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'flex-start',
         alignItems: 'flex-end',
-        paddingTop: 100,  // Menü butonun altında açılması için
-        backgroundColor: 'rgba(0, 0, 0, 0)'  // Tamamen şeffaf arkaplan
+        paddingTop: 100,  
+        backgroundColor: 'rgba(0, 0, 0, 0)'  
     },
     dropdownMenu: {
         marginTop: 5,

@@ -70,10 +70,12 @@ const SignatureDetail = () => {
     };
 
     const formatGroups = (groups) => {
-        return groups.map((group, index) => ({
-            key: `${group.join(', ')} haftaları benzer.`,
-            text: `Grup ${index + 1}: ${group.map(week => `${week}. hafta`).join(', ')}`
-        }));
+        return groups
+            .filter(group => group.some(week => week !== null))
+            .map((group, index) => ({
+                key: `${group.join(', ')} haftaları benzer.`,
+                text: `Grup ${index + 1}: ${group.filter(week => week !== null).map(week => `${week}. hafta`).join(', ')}`
+            }));
     };
 
     const goBackToCourses = () => {
@@ -113,16 +115,16 @@ const SignatureDetail = () => {
                     style={{
                         backgroundColor: GlobalStyles.surfaceColors.primary,
                         marginBottom: 8
-                    }} // Konteyner arka plan rengi
+                    }}
                     dropDownContainerStyle={{
-                        backgroundColor: GlobalStyles.surfaceColors.primary // Açılır menü arka plan rengi
+                        backgroundColor: GlobalStyles.surfaceColors.primary
                     }}
                     labelStyle={{
-                        color: GlobalStyles.surfaceColors.dark  // Etiket metin rengi
+                        color: GlobalStyles.surfaceColors.dark
                     }}
-                    //arrowColor="#0077b6" // Ok rengi
+                    //arrowColor="#0077b6" 
                     listItemLabelStyle={{
-                        color: '#666' // Menü öğesi metin rengi
+                        color: '#666'
                     }}
                 />
 
@@ -182,7 +184,7 @@ const styles = StyleSheet.create({
     groupText: {
         color: "white",
         marginBottom: 5,
-        
+
     },
     text: {
 
@@ -192,8 +194,8 @@ const styles = StyleSheet.create({
         color: "white",
 
     },
-    
-    
+
+
 });
 
 export default SignatureDetail;

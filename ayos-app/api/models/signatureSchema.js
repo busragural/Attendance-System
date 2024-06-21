@@ -9,10 +9,10 @@ const signatureSchema = new mongoose.Schema({
         type: Number,
 
     }],
-    scores: [{
-        type: Number,
+    // scores: [{
+    //     type: Number,
 
-    }],
+    // }],
     groups: [[{
         type: Number
     }]],
@@ -20,6 +20,7 @@ const signatureSchema = new mongoose.Schema({
         type: String,
 
     },
+    
 
 });
 

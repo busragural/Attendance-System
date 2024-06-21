@@ -75,7 +75,7 @@ const login = () => {
     <KeyboardAvoidingView
       style={styles.allScreen}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20} // Adjust the offset for Android
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
 
       <View style={styles.loginContainer}>
@@ -165,11 +165,11 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     backgroundColor: GlobalStyles.surfaceColors.primary,
-    elevation: Platform.OS === "android" ? 15 : 20,  
+    elevation: Platform.OS === "android" ? 15 : 20,
     shadowColor: "black",
     shadowOffset: { width: 0, height: 2 },
-    shadowRadius: Platform.OS === "android" ? 30 : 6,  
-    shadowOpacity: Platform.OS === "android" ? 0.75 : 0.55, 
+    shadowRadius: Platform.OS === "android" ? 30 : 6,
+    shadowOpacity: Platform.OS === "android" ? 0.75 : 0.55,
     marginHorizontal: 16,
     borderRadius: 16,
     paddingHorizontal: 8,
@@ -209,16 +209,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold"
   },
-  registerContainer:{
+  registerContainer: {
     flexDirection: "row",
-    
+
   },
-  registerText:{
+  registerText: {
     color: GlobalStyles.surfaceColors.dark,
     textAlign: "center",
     marginTop: 10,
     fontSize: 16,
-    
+
   }
 
 });

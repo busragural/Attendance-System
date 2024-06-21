@@ -79,7 +79,6 @@ const attendanceList = () => {
                     const studentInfoMap = {};
                     const studentsInfo = response.data.studentsInfo;
                     console.log("testzzz", studentsInfo);
-                    // Her öğrenci için bilgileri studentInfoMap'e ekle
                     studentsInfo.forEach((student, index) => {
                       const studentId = studentIds[index];
                       const attendance = attendances[index];
@@ -91,8 +90,6 @@ const attendanceList = () => {
                     });
 
 
-
-                    // State'i güncelle
                     setStudentInfo(studentInfoMap);
                     setLoading(false);
                   })
@@ -108,21 +105,21 @@ const attendanceList = () => {
                 console.error("Error fetching attendance list:", error.message);
                 setLoading(false);
               });
-            
+
           })
 
 
           .catch((error) => {
             console.error("Error getting token from AsyncStorage:", error);
-            setLoading(false); // Hata oluştuğunda loading'i false yap
+            setLoading(false);
           });
       })
       .catch((error) => {
         console.error("Error fetching course ID:", error);
-        setLoading(false); // Hata oluştuğunda loading'i false yap
+        setLoading(false);
       });
 
- 
+
   }, [courseCode, courseWeek]);
 
   const goBackToCourses = () => {
@@ -131,23 +128,23 @@ const attendanceList = () => {
 
 
 
-  // Yoklama durumunu güncellemek için fonksiyon
+
   const toggleAttendance = (studentId) => {
     const objectId = Object.keys(studentInfo).find(id => studentInfo[id].studentId === studentId);
 
     if (objectId) {
-      const updatedAttendance = !studentInfo[objectId].attendance; // Mevcut durumun tersini al
+      const updatedAttendance = !studentInfo[objectId].attendance;
       const studentInfoCopy = { ...studentInfo };
-      studentInfoCopy[objectId].attendance = updatedAttendance; // Yeni durumu kopyaya uygula
+      studentInfoCopy[objectId].attendance = updatedAttendance;
 
-      setStudentInfo(studentInfoCopy); // State'i güncelle
-      updateAttendanceOnServer(objectId, updatedAttendance, formatDate(courseWeek)); // Server'a güncellemeyi gönder
+      setStudentInfo(studentInfoCopy);
+      updateAttendanceOnServer(objectId, updatedAttendance, formatDate(courseWeek));
     } else {
       console.error("Student not found with ID:", studentId);
     }
   };
 
-  const updateAttendanceOnServer = async (studentId, attendance, date ) => {
+  const updateAttendanceOnServer = async (studentId, attendance, date) => {
     console.log("attendance ne olu", attendance)
     try {
       const token = await AsyncStorage.getItem("auth");
@@ -155,7 +152,7 @@ const attendanceList = () => {
         studentId,
         courseCode,
         attendance,
-        date 
+        date
       }, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -163,7 +160,7 @@ const attendanceList = () => {
       });
       console.log("Attendance updated successfully");
 
-      
+
     } catch (error) {
       console.error("Error updating attendance:", error);
     }
@@ -256,7 +253,7 @@ const styles = StyleSheet.create({
   insideCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center', // Metin ve ikonu dikey olarak ortalar
+    alignItems: 'center',
     padding: 10,
     flex: 1
   },

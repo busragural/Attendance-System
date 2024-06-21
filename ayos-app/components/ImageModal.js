@@ -97,8 +97,8 @@ const ImageModal = ({
                    
                     console.log("Selected1", firstHalfSelected);
                     console.log("Selected2", secondHalfSelected);
-                    sendImagesToServer(); // Resimleri sunucuya gönder
-                    setSelectedImages([]); // Seçilen resimleri temizle
+                    sendImagesToServer(); 
+                    setSelectedImages([]); 
                     toggleModal();
                   } else if (selectedImages.length === 0) {
                     Alert.alert("Uyarı", "En az bir görsel seçin.", [

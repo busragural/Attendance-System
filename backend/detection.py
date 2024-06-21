@@ -51,7 +51,7 @@ def preprocess_image(image: np.ndarray, block_size: int = 21, constant_subtracti
         - tuple: A tuple containing the resized original image, thresholded image, and edge-detected image.
     """
     image = np.array(image)
-    resized = cv2.resize(image, (1400, 1000))
+    resized = cv2.resize(image, (1750, 1250))
     gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
     blurred = cv2.medianBlur(gray, 3)
     thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, block_size, constant_subtraction)
@@ -134,7 +134,7 @@ def extend_lines(clean_image: np.ndarray, lines: np.ndarray) -> np.ndarray:
             extended_x2 = int((completed_image.shape[0] - intercept) / slope) # y = 1000
             extended_y1 = 10
             extended_y2 = completed_image.shape[0] - 10
-        cv2.line(completed_image, (extended_x1, extended_y1), (extended_x2, extended_y2), (0, 0, 0), 2)
+        cv2.line(completed_image, (extended_x1, extended_y1), (extended_x2, extended_y2), (0, 0, 0), 1)
     return completed_image
 
 def detect_all_boxes(image: np.ndarray, block_size: int = 21, constant_subtraction: int = 19) -> tuple:
@@ -170,14 +170,18 @@ def check_box(image: np.ndarray, method=0) -> int:
     image_mean = np.mean(image)
     if method == 0:
         threshold = 247
-        if image_mean > 1 and image_mean <= threshold: return 1
-        elif image_mean > threshold and image_mean < 254: return 0
-        else: return -1
+        if image_mean > 1 and image_mean <= threshold:
+            return 1
+        else:
+            return 0
     elif method == 1:
-        threshold = 0.97
-        if image_mean > 0.01 and image_mean <= threshold: return 1
-        elif image_mean > threshold and image_mean < 0.995: return 0
-        else: return -1
+        threshold = 0.975
+        if image_mean > 0.01 and image_mean <= threshold:
+            return 1
+        elif (image_mean > threshold and image_mean < 0.995):
+            return 0
+        else:
+            return -1
 
 def extract_students(image: np.ndarray, block_size: int = 25, constant_subtraction: int = 11) -> dict:
     """
@@ -196,27 +200,29 @@ def extract_students(image: np.ndarray, block_size: int = 25, constant_subtracti
     reader = easyocr.Reader(['en'])
     for index in sorted_indices:
         x, y, w, h = bounding_boxes[index]
-        if (3000 < areas[index] < 15000) and (145 < w < 200) and (20 < h < 90) and (h / w > 0.2):
+        if (5000 < areas[index] < 20000) and (180 < w < 230) and (40 < h < 80) and (h / w > 0.2):
             cv2.rectangle(detection_image, (x + padding, y + padding), (x + w - padding, y + h - padding), (0, 0, 255), 1)
             region = thresh[y + padding : y + h - padding, x + padding : x + w - padding]
+            # display_image(region)
             if check_box(region) == 1:
                 results = reader.readtext(region)
                 text = " ".join([res[1] for res in results]).strip()
                 text = (text.replace('o', '0')
                             .replace('O', '0')
-                            .replace('c', '0')
                             .replace('C', '0')
                             .replace('I', '1')
                             .replace('t', '1')
                             .replace('T', '1')
                             .replace('[', '1')
                             .replace(']', '3')
-                            .replace('&', '8'))
+                            .replace('s', '5')
+                            .replace('&', '8')
+                            .replace('s', '5'))
                 print(text)
                 students[text] = {'attendance': [1, 1, 1, 1, 1, 1, 1], 'signatures': [], 'scores': []}  
     return students
 
-def detect_signatures(image: np.ndarray, students: dict) -> dict:
+def detect_signatures(image: np.ndarray, students: dict, block_size: int = 29, constant_subtraction: int = 17) -> dict:
     """
     Detects signatures in an image and updates attendance information.
     
@@ -227,17 +233,17 @@ def detect_signatures(image: np.ndarray, students: dict) -> dict:
     Returns:
         - dict: Updated dictionary of students with signature detection results.
     """
-    image, thresh, areas, bounding_boxes, sorted_indices = detect_all_boxes(image)
+    image, thresh, areas, bounding_boxes, sorted_indices = detect_all_boxes(image, block_size, constant_subtraction)
     detection_image = image.copy()
     all_regions = []
     x_list = []
-    padding = 1
+    padding = 3
     counter = 0
     person = 0
     key_list = list(students.keys())
     for index in sorted_indices:
         x, y, w, h = bounding_boxes[index]
-        if (3000 < areas[index] < 8000) and (95 < w < 140) and (30 < h < 90) and (h / w > 0.225):
+        if (5000 < areas[index] < 20000) and (130 < w < 180) and (40 < h < 80) and (h / w > 0.225):
             cv2.rectangle(detection_image, (x + padding, y + padding), (x + w - padding, y + h - padding), (0, 0, 255), 1)
             region = thresh[y + padding : y + h - padding, x + padding : x + w - padding]
             region = mh.process_single_image(region, image_size=(128, 128))
@@ -291,7 +297,7 @@ def comparison_algorithm(signatures: list, model: object, threshold: float = 0.7
     return scores, groups
 
 def main():
-    path_1 = 'attendance_sample_4.jpg'
+    path_1 = 'attendance_sample_1.jpg'
     image_1 = np.array(Image.open(path_1))
 
     # extract student number information

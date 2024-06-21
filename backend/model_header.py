@@ -183,5 +183,5 @@ def model_building(model: Model) -> Model:
     model.compile(optimizer='adam',
                 loss=contrastive_loss,
                 metrics=[custom_accuracy, f1_score])
-    model.load_weights('model_snn_colab.h5')
+    model.load_weights('model_snn.h5')
     return model

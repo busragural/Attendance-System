@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, ScrollView, TouchableOpacity, Alert} from 'react-native';
+import { View, Text, FlatList, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -60,10 +60,16 @@ const LimitBreachList = () => {
     };
 
     const exportStudentsToCSV = async (students) => {
-        let csvContent = "Name,Surname,Email,Student ID,Absences\n";
+        let csvContent = "Group,Name,Surname,Email,Student ID,Absences\n";
 
-        students.forEach(student => {
-            const row = `${student.name},${student.surname},${student.email},${student.studentId},${student.absences}`;
+        exceededLimitStudents.forEach(student => {
+            const row = `Kaldı,${student.name},${student.surname},${student.email},${student.studentId},${student.absences}`;
+            csvContent += row + "\n";
+        });
+
+
+        atLimitStudents.forEach(student => {
+            const row = `Sınırda,${student.name},${student.surname},${student.email},${student.studentId},${student.absences}`;
             csvContent += row + "\n";
         });
 
@@ -79,6 +85,7 @@ const LimitBreachList = () => {
 
         return fileName;
     };
+
 
     const handleExportToCSV = () => {
         const studentsToExport = [];
@@ -103,9 +110,9 @@ const LimitBreachList = () => {
         );
     };
 
-    
+
     const handleSendEmails = async () => {
-       
+
         try {
             const token = await AsyncStorage.getItem("auth");
             const postData = {
@@ -119,15 +126,15 @@ const LimitBreachList = () => {
             });
 
             if (response.status === 200) {
-                alert('Email gönderme başarılı');
+                Alert.alert('Email gönderme başarılı.');
 
-               
+
             }
         } catch (error) {
             console.error('Failed to send emails:', error.message);
             alert('Email gönderilirken hata oluştu.');
-            
-            
+
+
         }
     };
 
@@ -150,15 +157,6 @@ const LimitBreachList = () => {
                     </View>
                 </TouchableOpacity>
 
-
-
-
-                {/* <TouchableOpacity onPress={handleSendEmails}>
-                    <View style={styles.backIconView}>
-                        <AntDesign name="export" size={30} color="white" />
-                    </View>
-                </TouchableOpacity> */}
-
             </View>
 
             {menuVisible && (
@@ -175,7 +173,7 @@ const LimitBreachList = () => {
                             confirmSendEmails();
                             setMenuVisible(false);
                         }}>
-                            <AntDesign name="mail" size={24} color={GlobalStyles.surfaceColors.dark}  style={styles.menuIcon} />
+                            <AntDesign name="mail" size={24} color={GlobalStyles.surfaceColors.dark} style={styles.menuIcon} />
                             <Text style={styles.menuOptionText}>Mail Gönder</Text>
                         </TouchableOpacity>
                     </View>
@@ -336,8 +334,8 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.4)', // Semi-transparent
-        zIndex: 999 // Just below the menu
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        zIndex: 999
     },
 });
 

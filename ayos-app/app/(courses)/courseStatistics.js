@@ -51,7 +51,7 @@ const CourseStatistics = () => {
                 );
                 const data = response.data;
                 console.log("data nemis", data);
-                setStudentNumbers(data.studentNumbers); // Verileri state'e kaydet
+                setStudentNumbers(data.studentNumbers);
 
             } catch (error) {
                 console.error("Error fetching student numbers:", error.message);
@@ -73,9 +73,7 @@ const CourseStatistics = () => {
                 console.log(" data:", data);
                 console.log("Weekly attendance data:", data.weeklyAttendance);
                 data.weeklyAttendance.forEach(entry => {
-                    // Access studentIds array for each entry
                     const studentIds = entry.attendanceData;
-                    // Now you can use studentIds array as needed
                     console.log("test", studentIds);
                 });
                 const sortedData = data.weeklyAttendance.sort((a, b) => new Date(a._id) - new Date(b._id));
@@ -171,7 +169,7 @@ const CourseStatistics = () => {
                                 datasets: [{ data: participationData }],
 
                             }}
-                            width={deviceWidth * 1.3} // Grafik genişliği
+                            width={deviceWidth * 1.3}
                             height={220}
                             yAxisSuffix="%"
                             chartConfig={{
@@ -187,7 +185,7 @@ const CourseStatistics = () => {
 
                                 },
 
-                                barPercentage: 0.3 // Bar genişliği
+                                barPercentage: 0.3
                             }}
 
                             style={{
@@ -215,7 +213,7 @@ const CourseStatistics = () => {
                     <Text style={styles.tableHeaderText}>Oran</Text>
                 </View>
                 {weeklyAttendance.map((item, index) => {
-                    const formattedDate = formatDate(item._id); // Format date
+                    const formattedDate = formatDate(item._id);
 
                     const totalParticipants = item.totalTrue + item.totalFalse;
                     const participationRate = totalParticipants === 0 ? 0 : Math.round((item.totalTrue / totalParticipants) * 100);
@@ -315,7 +313,7 @@ const styles = StyleSheet.create({
         color: GlobalStyles.surfaceColors.text,
     },
     wideTableCell: {
-        flex: 2, // İlk sütuna daha fazla alan vermek için
+        flex: 2,
         fontSize: 16,
         color: GlobalStyles.surfaceColors.text,
         fontWeight: "bold",
@@ -324,7 +322,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginBottom: 5,
-        borderBottomWidth: 1, // This adds a line at the bottom of each row
+        borderBottomWidth: 1,
         borderBottomColor: `rgba(255, 255, 255, 0.2)`
     },
     tableCell: {
@@ -357,7 +355,7 @@ const styles = StyleSheet.create({
         borderBottomColor: `rgba(255, 255, 255, 0.2)`,
     },
     atLimitRow: {
-        backgroundColor: '#C9BF34', // Light yellow for at limit
+        backgroundColor: '#C9BF34',
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginBottom: 5,

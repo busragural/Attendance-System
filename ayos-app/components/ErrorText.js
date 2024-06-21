@@ -14,11 +14,11 @@ export default ErrorText;
 
 const styles = StyleSheet.create({
   container: {
-    height: 20, 
-    justifyContent: 'center',  
+    height: 20,
+    justifyContent: 'center',
     alignItems: 'center',
     marginTop: 15,
-    
+
   },
   errorText: {
     color: GlobalStyles.surfaceColors.error,

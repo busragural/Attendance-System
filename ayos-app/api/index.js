@@ -10,10 +10,10 @@ const nodemailer = require('nodemailer');
 const port = 8000;
 const cors = require("cors");
 const corsOptions = {
-  origin: "*", // or specify the specific origin of your React Native app
+  origin: "*", 
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
-  debug: true, // Enable debug logs
+  debug: true, 
 };
 
 app.use(cors(corsOptions));
@@ -36,7 +36,7 @@ const Signature = require("./models/signatureSchema");
 
 mongoose
   .connect(
-    "url",
+    "api-url",
     {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -131,22 +131,19 @@ app.post("/register", async (req, res) => {
     console.log("Received register request:", req.body);
     const { name, surname, email, password } = req.body;
 
-    // Check if the user already exists
     const existingUser = await Instructor.findOne({ email });
     if (existingUser) {
       return res.status(409).json({ message: "Email already in use" });
     }
 
-    // Create a new user
     const newUser = new Instructor({
       name,
       surname,
       email,
-      password, // Note: In a real application, always hash passwords before saving
+      password, 
     });
     await newUser.save();
 
-    // Generate a token
     const token = jwt.sign({ userId: newUser._id }, secretKey);
     res.status(201).json({ token });
   } catch (error) {
@@ -156,19 +153,16 @@ app.post("/register", async (req, res) => {
 });
 
 
-//endpoint to login
 app.post("/login", async (req, res) => {
   try {
     console.log("Received login request:", req.body);
     const { email, password } = req.body;
-    //check if the user exists already
     const user = await Instructor.findOne({ email });
     console.log("user", user);
     if (!user) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    //check in password is correct
     if (user.password !== password) {
       return res.status(401).json({ message: "Invalide password" });
     }
@@ -181,9 +175,9 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// Endpoint to get user courses
+
 app.get("/user/courses", (req, res) => {
-  const token = req.headers.authorization.split(" ")[1]; // Assuming the token is in the 'Authorization' header
+  const token = req.headers.authorization.split(" ")[1]; 
   jwt.verify(token, secretKey, async (err, decoded) => {
     if (err) {
       return res.status(401).json({ message: "Invalid token" });
@@ -206,7 +200,7 @@ app.get("/user/courses", (req, res) => {
   });
 });
 
-// Add a new endpoint to get attendance list for a specific week
+
 app.get("/attendanceList", async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
 
@@ -239,7 +233,7 @@ app.get("/attendanceList", async (req, res) => {
   });
 });
 
-// Endpoint to get course ID by course code
+
 app.get("/courseId", async (req, res) => {
   try {
     const { courseCode } = req.query;
@@ -257,12 +251,12 @@ app.get("/courseId", async (req, res) => {
   }
 });
 
-// Endpoint to get student information by student IDs
+
 app.get("/studentsInfo", async (req, res) => {
   try {
     const { studentIds } = req.query;
-    console.log("Received studentIds:", studentIds); // Add this line for logging
-    const studentIdsArray = studentIds.split(",").filter(Boolean); // Filter out empty strings
+    console.log("Received studentIds:", studentIds); 
+    const studentIdsArray = studentIds.split(",").filter(Boolean); 
     console.log("xxxStudent IDs:", studentIdsArray);
 
     if (
@@ -296,7 +290,7 @@ app.get("/studentsInfo", async (req, res) => {
   }
 });
 
-// Endpoint to add or update a course
+
 app.post("/user/addCourse", async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
 
@@ -349,7 +343,7 @@ app.post("/user/addCourse", async (req, res) => {
   });
 });
 
-// Endpoint to delete a course
+
 app.delete("/user/deleteCourse/:courseId", async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
 
@@ -392,7 +386,6 @@ app.delete("/user/deleteCourse/:courseId", async (req, res) => {
 });
 
 
-// Endpoint to get student information by student ID
 app.get("/studentInfo/:studentId", async (req, res) => {
   try {
     const studentId = req.params.studentId;
@@ -419,7 +412,6 @@ app.get("/studentInfo/:studentId", async (req, res) => {
 });
 
 
-// Endpoint to get student's courses and attendance status
 app.get("/studentCourses/:studentId", async (req, res) => {
   try {
     const studentId = req.params.studentId;
@@ -454,7 +446,7 @@ app.get("/studentCourses/:studentId", async (req, res) => {
   }
 });
 
-// Endpoint to upload CSV file
+
 app.post("/uploadCsv", async (req, res) => {
   try {
     const token = req.headers.authorization.split(" ")[1];
@@ -466,29 +458,23 @@ app.post("/uploadCsv", async (req, res) => {
 
       const userId = decoded.userId;
 
-      // Check if user is authorized to upload CSV
       const user = await Instructor.findById(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Process the uploaded CSV file
       const csvData = req.body.csvData;
       const courseCode = req.body.courseCode;
       console.log("CSV data received:", csvData);
       console.log("Course code recieved", courseCode);
 
-      // Parse the CSV data
       const parsedCsv = csvData.split("\n").map(row => row.split(","));
 
-      // Iterate over each row in the CSV data
       for (const row of parsedCsv) {
-        const [name, surname, email, studentId] = row.map(value => value.trim()); // Trim each value
+        const [name, surname, email, studentId] = row.map(value => value.trim()); 
 
-        // Check if student with the same studentId already exists in the database
         let existingStudent = await Student.findOne({ studentId });
 
-        // If student does not exist, create a new student record
         if (!existingStudent) {
           existingStudent = new Student({
             name,
@@ -502,17 +488,15 @@ app.post("/uploadCsv", async (req, res) => {
 
          
         }
-         // Add student to Participant collection
          const participant = await Participant.findOneAndUpdate(
           { courseCode, academianId: userId },
-          { $addToSet: { students: studentId } }, // Add student to students array if not already present
+          { $addToSet: { students: studentId } }, 
           { upsert: true, new: true }
         );
 
         console.log("Participant updated:", participant);
       }
 
-      // Return a success message
       res.status(200).json({ message: "CSV file uploaded and processed successfully" });
     });
   } catch (error) {
@@ -522,41 +506,33 @@ app.post("/uploadCsv", async (req, res) => {
 });
 
 
-// Endpoint to get the list of student numbers enrolled in a course for a specific instructor
 app.get("/course/studentNumbers", async (req, res) => {
   try {
     console.log("Received studentnumbers request:", req.body);
 
-    // İstekte bulunan akademisyenin kimliğini alın
     const token = req.headers.authorization.split(" ")[1];
 
-    // JWT'yi doğrula ve akademisyen kimliğini çıkar
     jwt.verify(token, secretKey, async (err, decoded) => {
       if (err) {
         return res.status(401).json({ message: "Invalid token" });
       }
 
-      const academianId = decoded.userId; // Doğrulanan akademisyen kimliği
+      const academianId = decoded.userId; 
 
       const { courseCode } = req.query;
 
-      // Hem akademisyen kimliği hem de ders kodu sağlanmış mı diye kontrol edin
       if (!academianId || !courseCode) {
         return res.status(400).json({ message: "Invalid parameters" });
       }
 
-      // Belirtilen akademisyen ve ders için katılımcı kaydını bulun
       const participant = await Participant.findOne({ academianId, courseCode });
 
-      // Katılımcı kaydı bulunamazsa, boş bir dizi döndürün
       if (!participant) {
         return res.status(200).json({ studentNumbers: [] });
       }
 
-      // Ders kaydına kayıtlı öğrenci numaralarının dizisini alın
       const studentNumbers = participant.students;
 
-      // Öğrenci numaraları dizisini döndürün
       res.status(200).json({ studentNumbers });
     });
   } catch (error) {
@@ -570,20 +546,18 @@ app.get("/course/weeklyAttendance", async (req, res) => {
   try {
     const { courseCode } = req.query;
 
-    // courseCode ile eşleşen dersin ObjectId'sini bulun
     const course = await Course.findOne({ code: courseCode });
 
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
     }
 
-    // courseCode ile eşleşen dersin haftalık katılım bilgilerini bulun
     const weeklyAttendance = await Attendance.aggregate([
       { $match: { courseId: course._id } },
       {
         $group: {
           _id: { date: "$date", studentId: "$studentId" },
-          attended: { $max: "$attendance" }, // Determine if the student attended on this date
+          attended: { $max: "$attendance" }, 
         },
       },
       {
@@ -596,16 +570,15 @@ app.get("/course/weeklyAttendance", async (req, res) => {
             },
           },
           totalTrue: {
-            $sum: { $cond: { if: "$attended", then: 1, else: 0 } }, // Total true attendance count for the week
+            $sum: { $cond: { if: "$attended", then: 1, else: 0 } }, 
           },
           totalFalse: {
-            $sum: { $cond: { if: { $not: "$attended" }, then: 1, else: 0 } }, // Total false attendance count for the week
+            $sum: { $cond: { if: { $not: "$attended" }, then: 1, else: 0 } }, 
           },
         },
       },
     ]);
 
-    // Öğrenci numaralarını öğrenci belirteçlerinden alarak güncelle
     for (const attendanceRecord of weeklyAttendance) {
       const studentsInfo = await Promise.all(
         attendanceRecord.attendanceData.map(async (record) => {
@@ -626,24 +599,19 @@ app.get("/course/weeklyAttendance", async (req, res) => {
   }
 });
 
-// Endpoint to get enrolled students and their attendance status for the courses taught by the logged-in user
 app.get("/enrolledStudentsWithAttendance", async (req, res) => {
   try {
-    // JWT token'i alın
     const token = req.headers.authorization.split(" ")[1];
 
-    // JWT token'ı doğrula ve kullanıcı kimliğini al
     jwt.verify(token, secretKey, async (err, decoded) => {
       if (err) {
         return res.status(401).json({ message: "Invalid token" });
       }
 
-      const userId = decoded.userId; // Doğrulanan kullanıcı kimliği
+      const userId = decoded.userId; 
 
-      // Kullanıcının öğrettiği dersleri bul
       const userCourses = await Course.find({ academician: userId });
 
-      // Kullanıcının öğrettiği derslere kayıtlı öğrencileri bul
       const enrolledStudentsPromises = userCourses.map(async (course) => {
         const attendanceList = await Attendance.find({ courseId: course._id });
         const enrolledStudents = {};
@@ -666,7 +634,6 @@ app.get("/enrolledStudentsWithAttendance", async (req, res) => {
           }
         });
 
-        // Öğrenci bilgilerini doldurun
         const studentIds = Object.keys(enrolledStudents);
         const studentsInfo = await Student.find({ _id: { $in: studentIds } });
         studentsInfo.forEach((student) => {
@@ -696,52 +663,40 @@ app.post("/addAttendance", async (req, res) => {
 
     console.log("Received attendance data:", attendanceData);
 
-    // Authenticate the teacher's token
     const token = req.headers.authorization.split(" ")[1];
     jwt.verify(token, secretKey, async (err, decoded) => {
       if (err) {
         return res.status(401).json({ message: "Invalid token" });
       }
       const academianId = decoded.userId;
-      console.log("Academian ID:", academianId);
 
-      // Fetch the course details
       const course = await Course.findOne({ code: courseCode });
       if (!course) {
         return res.status(404).json({ message: "Course not found" });
       }
       const attendanceLimit = course.limit;
-      console.log("limitneymis: ", attendanceLimit);
 
       const totalWeeks = course.week;
-      console.log("Total Weeks:", totalWeeks);
       const courseStartDate = new Date(course.startDate);
-      console.log("Course Start Date:", courseStartDate);
 
-
-
-
-      // Determine the weeks range to process based on the semester half
       const weekOffset = (semesterHalf === "firstHalf") ? 0 : totalWeeks - 7;
       const weekIndices = Array.from({ length: Math.min(7, totalWeeks) }, (_, i) => i + weekOffset);
 
       console.log("Week Indices:", weekIndices);
 
-      // Iterate through the attendance data to update each student's record
       for (const studentNumber in attendanceData) {
         const studentAttendance = attendanceData[studentNumber];
         const student = await Student.findOne({ studentId: studentNumber });
         if (!student) {
           console.log(`Student ${studentNumber} not found`);
-          continue;  // Skip this student if not found
+          continue;  
         }
 
         for (let i = 0; i < weekIndices.length; i++) {
           const weekIndex = weekIndices[i];
           const attendanceIndex = weekIndex - weekOffset;
           const attendanceDate = new Date(courseStartDate.getTime() + weekIndex * 7 * 24 * 60 * 60 * 1000);
-          const formattedDate = attendanceDate.toISOString().split('T')[0]; // Get date in 'YYYY-MM-DD' format
-          console.log("stuaTTWek", studentAttendance[totalWeeks - weekIndex])
+          const formattedDate = attendanceDate.toISOString().split('T')[0]; 
           const attendanceStatus = studentAttendance[attendanceIndex] === 1;
 
           console.log("Date of Attendance:", attendanceDate);
@@ -760,7 +715,7 @@ app.post("/addAttendance", async (req, res) => {
               }
             },
             {
-              upsert: true, // Create a new document if no document matches the query criteria
+              upsert: true, 
               new: true
             }
           );
@@ -779,7 +734,7 @@ app.post("/addAttendance", async (req, res) => {
 
 
 app.post("/updateAttendance", async (req, res) => {
-  const { studentId, courseCode, attendance, date } = req.body; // Tarih bilgisini al
+  const { studentId, courseCode, attendance, date } = req.body; 
   const token = req.headers.authorization.split(" ")[1];
   try {
     jwt.verify(token, secretKey, async (err, decoded) => {
@@ -793,9 +748,8 @@ app.post("/updateAttendance", async (req, res) => {
       }
       const courseId = course._id;
 
-      // Tarih bilgisini kullanarak doğru yoklama kaydını bul ve güncelle
       await Attendance.updateOne(
-        { academianId, studentId, courseId, date }, // Tarih bilgisini sorguya dahil et
+        { academianId, studentId, courseId, date }, 
         { $set: { attendance } }
       );
 
@@ -810,48 +764,122 @@ app.post("/updateAttendance", async (req, res) => {
 app.post('/addSignatures', async (req, res) => {
   const imagesData = req.body.signatureData;
   const courseCode = req.body.courseCode;
-  const semesterHalf = req.body.semesterHalf; // Dönemin ilk veya son yarısı bilgisi
-  const totalWeeks = req.body.totalWeeks || 14; // Toplam hafta sayısı varsayılan olarak 14 kabul edilmiştir
+  const semesterHalf = req.body.semesterHalf; 
+  const totalWeeks = req.body.totalWeeks || 14; 
 
   try {
     const results = [];
 
     for (const imageKey in imagesData) {
-      const studentsData = imagesData[imageKey]; // Örneğin image_0, image_1...
+      const studentsData = imagesData[imageKey]; 
       for (const studentId in studentsData) {
         const student = studentsData[studentId];
         const { attendance, scores, groups } = student;
 
-        // İkinci yarı için başlangıç hafta numarasını ayarla
+    
         const weekOffset = (semesterHalf === "secondHalf") ? totalWeeks / 2 : 0;
+        console.log("weekOffset",weekOffset)
         const weekNumbers = attendance.map((attended, index) => attended ? index + 1 + weekOffset : null).filter(n => n);
+        console.log("weekNumbers",weekNumbers)
         const updatedGroups = groups.map(group => group.map(index => weekNumbers[index]));
+        console.log("updatedGroups",updatedGroups)
 
-        // Önceki kayıtları bul ve güncelle
+
+
+      
         const existingDocument = await Signature.findOne({ studentId, courseCode });
+        console.log("existingDocument",existingDocument)
 
-        if (existingDocument && semesterHalf === "secondHalf") {
-          // Var olan veriler ile yeni verileri birleştir
-          const combinedAttendance = existingDocument.attendance.concat(attendance);
-          const combinedScores = existingDocument.scores.concat(scores);
-          const combinedGroups = existingDocument.groups.concat(updatedGroups);
 
-          await Signature.updateOne(
-            { studentId, courseCode },
-            { $set: { attendance: combinedAttendance, scores: combinedScores, groups: combinedGroups, courseCode } }
-          );
-        } else {
-          // Eğer ikinci yarı değilse veya kayıt yoksa, yeni kayıt ekle veya mevcut kaydı güncelle
-          await Signature.updateOne(
-            { studentId, courseCode },
-            { $set: { attendance, scores, groups: updatedGroups, courseCode } },
-            { upsert: true }
-          );
+        if(semesterHalf === "firstHalf"){
+          const firstHalfAttendance = attendance.slice(0, 7); 
+          const firstHalfWeekNumbers = firstHalfAttendance.map((attended, index) => attended ? index + 1 : null).filter(n => n);
+          const firstHalfGroups = groups.map(group => group.map(index => firstHalfWeekNumbers[index]));
+
+          console.log("firstHalfAttendance",firstHalfAttendance)
+          console.log("firstHalfWeekNumbers",firstHalfWeekNumbers)
+          console.log("firstHalfGroups",firstHalfGroups)
+
+          if (semesterHalf === "firstHalf") {
+            const firstHalfAttendance = attendance.slice(0, 7); 
+            const firstHalfWeekNumbers = firstHalfAttendance.map((attended, index) => attended ? index + 1 : null).filter(n => n);
+            const firstHalfGroups = groups.map(group => group.map(index => firstHalfWeekNumbers[index]));
+  
+            console.log("firstHalfAttendance", firstHalfAttendance);
+            console.log("firstHalfWeekNumbers", firstHalfWeekNumbers);
+            console.log("firstHalfGroups", firstHalfGroups);
+  
+            if (existingDocument) {
+              
+              const secondHalfAttendance = existingDocument.attendance.slice(7); 
+              const updatedAttendance = firstHalfAttendance.concat(secondHalfAttendance);
+              const updatedGroups = existingDocument.groups.map((group, index) => {
+                if (index < 7) {
+                  return firstHalfGroups[index];
+                }
+                return group; 
+              });
+  
+              await Signature.updateOne(
+                { studentId, courseCode },
+                { $set: { attendance: updatedAttendance, groups: updatedGroups } }
+              );
+            } else {
+              const placeholderAttendance = Array(7).fill(null); 
+              const fullAttendance = firstHalfAttendance.concat(placeholderAttendance);
+              const fullGroups = firstHalfGroups.concat(Array(7).fill([])); 
+  
+              const newSignature = new Signature({
+                studentId,
+                courseCode,
+                attendance: fullAttendance,
+                groups: fullGroups
+              });
+              await newSignature.save();
+            }
+          }
+  
         }
+        else{
+          const newSecondHalfAttendance = attendance.slice(0,7); 
+          const newSecondHalfWeekNumbers = newSecondHalfAttendance.map((attended, index) => attended ? index + 8 : null).filter(n => n);
+          const newSecondHalfGroups = groups.map(group => group.map(index => newSecondHalfWeekNumbers[index]));
+
+          if (existingDocument) {
+      
+            const updatedAttendance = existingDocument.attendance.slice(0, 7).concat(newSecondHalfAttendance);
+            const updatedGroups = existingDocument.groups.map((group, groupIndex) => {
+              if (groupIndex < 7) return group; 
+              return newSecondHalfGroups[groupIndex - 7] || []; 
+            });
+
+            await Signature.updateOne(
+              { studentId, courseCode },
+              { $set: { attendance: updatedAttendance, groups: updatedGroups } }
+            );
+          } else {
+            const placeholderAttendance = Array(7).fill(null); 
+            const fullAttendance = placeholderAttendance.concat(newSecondHalfAttendance);
+            const fullGroups = Array(7).fill([]).concat(newSecondHalfGroups); 
+
+            const newSignature = new Signature({
+              studentId,
+              courseCode,
+              attendance: fullAttendance,
+              groups: fullGroups
+            });
+            await newSignature.save();
+          }
+        }
+
+    
 
         results.push({ studentId, imageKey, updated: true });
       }
     }
+
+    
+
     res.status(201).json({ message: 'Signatures updated successfully', results });
   } catch (error) {
     console.error('Error saving signatures:', error);
@@ -860,17 +888,17 @@ app.post('/addSignatures', async (req, res) => {
 });
 
 app.get('/getSignaturesByCourse', async (req, res) => {
-  const courseCode = req.query.courseCode; // Query'den courseCode alınır
+  const courseCode = req.query.courseCode; 
   if (!courseCode) {
     return res.status(400).json({ message: "Course code is required" });
   }
 
   try {
-    const signatures = await Signature.find({ courseCode }); // courseCode'a göre verileri bul
+    const signatures = await Signature.find({ courseCode }); 
     if (signatures.length === 0) {
       return res.status(404).json({ message: "No signatures found for this course" });
     }
-    res.json(signatures); // Bulunan verileri JSON olarak dön
+    res.json(signatures); 
   } catch (error) {
     console.error('Error retrieving signatures:', error);
     res.status(500).json({ error: 'Internal server error', details: error.message });
@@ -878,41 +906,9 @@ app.get('/getSignaturesByCourse', async (req, res) => {
 });
 
 
-
-async function getStudentsByCourse(courseCode, limitPercentage) {
-  // Örnek MongoDB sorgusu, limit üzerindeki devamsızlığı olan öğrencileri çeker
-  return Student.find({
-    courseCode: courseCode,
-    absencePercentage: { $gte: limitPercentage }
-  }).exec();
-}
-
-// app.get('/limitBreaches', async (req, res) => {
-//   const courseCode = req.query.courseCode;
-
-//   const course = await Course.findOne({ code: courseCode });
-//   if (!course) {
-//     return res.status(404).json({ message: "Course not found" });
-//   }
-//   const limitPercentage = course.limit;
-
-
-//   try {
-//     const students = await getStudentsByCourse(courseCode, limitPercentage);
-//     console.log("stunot",students)
-//     res.json(students);
-//   }
-//   catch (error) {
-//     console.error('Error limits', error);
-//     res.status(500).json({ error: 'Internal server error', details: error.message });
-//   }
-// });
-
-
-// En son katılım tarihine göre hafta sayısını hesaplayan fonksiyon
 const getLastAttendanceWeek = async (courseId, startDate) => {
-  const lastAttendance = await Attendance.findOne({ courseId: courseId }).sort({ date: -1 }); // En son tarihli katılımı getir
-  if (!lastAttendance) return 0; // Eğer katılım kaydı yoksa, 0 dön
+  const lastAttendance = await Attendance.findOne({ courseId: courseId }).sort({ date: -1 }); 
+  if (!lastAttendance) return 0; 
 
   const start = new Date(startDate);
   const lastDate = new Date(lastAttendance.date);
@@ -935,7 +931,7 @@ app.get("/course/limitBreaches", async (req, res) => {
     let weeksPassed = await getLastAttendanceWeek(course._id, course.startDate);
     console.log("weeksPassed", weeksPassed);
 
-    const maximumAbsent = course.limit; // Maximum allowed absences, directly the limit value
+    const maximumAbsent = course.limit; 
 
     const weeklyAttendance = await Attendance.aggregate([
       { $match: { courseId: course._id } },
@@ -959,7 +955,6 @@ app.get("/course/limitBreaches", async (req, res) => {
       _id: { $in: weeklyAttendance.map(record => record.studentId) }
     }).select("studentId name surname email");
 
-    // Enrich students with absence data
     const enrichedStudents = studentsInfo.map(student => {
       const attendanceData = weeklyAttendance.find(record => record.studentId.toString() === student._id.toString());
       return {
@@ -968,7 +963,6 @@ app.get("/course/limitBreaches", async (req, res) => {
       };
     });
 
-    // Splitting into two lists
     const exceededLimit = enrichedStudents.filter(student => student.absences > maximumAbsent);
     const atLimit = enrichedStudents.filter(student => student.absences === maximumAbsent);
 
@@ -997,7 +991,7 @@ app.get("/course/weeklyAttendanceSummary", async (req, res) => {
         attendedCount: { $sum: { $cond: ["$attendance", 1, 0] } },
         notAttendedCount: { $sum: { $cond: ["$attendance", 0, 1] } }
       }},
-      { $sort: { _id: 1 } }  // Sort by date
+      { $sort: { _id: 1 } } 
     ]);
 console.log("tutmadi", weeklyAttendanceSummary);
     res.status(200).json({ weeklyAttendanceSummary });
@@ -1025,19 +1019,18 @@ app.post('/sendAttendanceWarnings', async (req, res) => {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: instructor.email,
-      pass: 'kyrqecdphdymvcxq'
+      user: 'ytuayos@gmail.com',
+      pass: 'tisdtrleosdyzuyr'
     }
   });
 
   try {
-    // Send emails to students who have exceeded the limit
     for (const student of exceededLimitStudents) {
       await transporter.sendMail({
         from: instructor.email,
         to: student.email,
         subject: `${courseCode} Devamsızlık Sınır Aşımı Hk.`,
-        text: `${student.studentId} numaralı öğrenci, devamsızlık sınırını aştınız. Lütfen öğretim üyesi ile iletişime geçiniz.`,
+        text: `${student.studentId} numaralı öğrenci, ${courseCode} kodlu derste devamsızlık sınırını aştınız. Lütfen öğretim üyesi ile iletişime geçiniz.`,
       });
     }
 
@@ -1047,7 +1040,7 @@ app.post('/sendAttendanceWarnings', async (req, res) => {
         from: instructor.email,
         to: student.email,
         subject:  `${courseCode} Devamsızlık Sınırı Hk.`,
-        text: `${student.studentId} numaralı öğrenci, devamsızlık sınırındasınız. Lütfen öğretim üyesi ile iletişime geçiniz.`,
+        text: `${student.studentId} numaralı öğrenci, ${courseCode} kodlu derste devamsızlık sınırındasınız. Lütfen öğretim üyesi ile iletişime geçiniz.`,
       });
     }
 
@@ -1061,23 +1054,20 @@ app.post('/sendAttendanceWarnings', async (req, res) => {
 app.get("/user/courseParticipants/:courseCode", async (req, res) => {
   const { courseCode } = req.params;
   try {
-    const token = req.headers.authorization.split(' ')[1]; // Bearer token'ı alın
-    const decodedToken = jwt.verify(token, secretKey); // Token'ı doğrulayın
-    const userId = decodedToken.userId; // Kullanıcı ID'sini alın
+    const token = req.headers.authorization.split(' ')[1]; 
+    const decodedToken = jwt.verify(token, secretKey); 
+    const userId = decodedToken.userId; 
 
-    // Katılımcıları bul
+    
     const participants = await Participant.find({ courseCode: courseCode });
 
     console.log("parti", participants)
 
-    // Eğer katılımcı bulunamazsa
     if (!participants) {
       return res.status(404).json({ message: "Katılımcı bulunamadı" });
     }
 
-    // Öğrenci numaralarını al
     const studentNumbers = participants[0].students;
-
 
     const studentsData = await Promise.all(
       studentNumbers.map(async (studentNumber) => {
@@ -1095,4 +1085,41 @@ app.get("/user/courseParticipants/:courseCode", async (req, res) => {
     console.error("Katılımcı listesi alınırken hata oluştu:", error.message);
     res.status(500).json({ message: "Katılımcı listesi alınırken hata oluştu" });
   }
+});
+
+
+app.post("/user/updateCourse", async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+
+  jwt.verify(token, secretKey, async (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+
+    const userId = decoded.userId;
+
+    try {
+      const user = await Instructor.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const { code, limit } = req.body;
+
+      let existingCourse = await Course.findOne({ code });
+
+      if (!existingCourse) {
+        return res.status(404).json({ message: "Course not found" });
+      }
+
+      existingCourse.limit = limit;
+
+      await existingCourse.save();
+
+      res.status(200).json({ course: existingCourse });
+    } catch (error) {
+      console.error("Error updating course:", error.message);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
 });

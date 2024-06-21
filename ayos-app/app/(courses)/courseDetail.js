@@ -5,7 +5,8 @@ import {
   Text,
   TouchableOpacity,
   View,
-  RefreshControl
+  RefreshControl,
+  Alert
 } from "react-native";
 import React, { useEffect, useState } from "react";
 
@@ -44,7 +45,7 @@ const courseDetail = () => {
   const params = useLocalSearchParams();
   const courseName = params.courseName;
   const courseCode = params.courseCode;
-  const courseWeek = parseInt(params.courseWeek, 10); // Assuming courseWeek is provided as a string
+  const courseWeek = parseInt(params.courseWeek, 10);
   const courseStartDate = params.courseStartDate;
   const [refreshing, setRefreshing] = useState(false);
 
@@ -87,14 +88,14 @@ const courseDetail = () => {
   // }, []);
 
   useEffect(() => {
-    fetchWeeklyAttendanceSummary(false); // İlk yüklemede refreshing olmasın
+    fetchWeeklyAttendanceSummary(false);
   }, [courseCode]);
 
   const fetchWeeklyAttendanceSummary = async (isRefreshing) => {
     if (isRefreshing) {
-      setRefreshing(true); // Sadece swipe yapıldığında refreshing aktif edilir
+      setRefreshing(true);
     } else {
-      setLoading(true); // İlk yüklemelerde loading kullanılır
+      setLoading(true);
     }
     try {
       const response = await axios.get(`http://${ip_address}:8000/course/weeklyAttendanceSummary?courseCode=${courseCode}`);
@@ -107,15 +108,15 @@ const courseDetail = () => {
       console.error("Error fetching weekly attendance summary:", error);
     } finally {
       if (isRefreshing) {
-        setRefreshing(false); // Refreshing durumu sonlandır
+        setRefreshing(false);
       } else {
-        setLoading(false); // Loading durumu sonlandır
+        setLoading(false);
       }
     }
   };
 
   const onRefresh = () => {
-    fetchWeeklyAttendanceSummary(true); // Swipe refresh için true gönder
+    fetchWeeklyAttendanceSummary(true);
   };
 
   const goBackToCourses = () => {
@@ -151,7 +152,7 @@ const courseDetail = () => {
       const selectedImage = result.assets[0];
       const selectedImageUri = selectedImage.uri;
 
-      // // Fotoğrafı dinamik olarak döndürme
+
       // let rotation = 0;
       // if (deviceOrientation === 'right') {
       //   rotation = -90;
@@ -163,23 +164,9 @@ const courseDetail = () => {
       // console.log("orie", deviceOrientation);
 
 
-      if (!selectedImageUri.endsWith('.jpg')) {
-        // If the image is not in JPEG format, manipulate it to convert to JPEG
-        const manipResult = await ImageManipulator.manipulateAsync(
-          selectedImage.uri,
-          [],
-          //[{ rotate: rotation }],
-          // Resize action instead of format
-          { compress: 1, format: ImageManipulator.SaveFormat.PNG } // Adjust compress factor if needed
-        );
-        setSelectedImages((prevImages) => [...prevImages, manipResult.uri]);
-        //setSelectedImages([manipResult.uri]);
-        console.log("Selected Image:", manipResult.uri);
+      setSelectedImages((prevImages) => [...prevImages, selectedImageUri]);
+      console.log("Selected Images:", selectedImages);
 
-      } else {
-        setSelectedImages((prevImages) => [...prevImages, selectedImageUri]);
-        console.log("Selected Images:", selectedImages);
-      }
     }
   };
 
@@ -204,16 +191,8 @@ const courseDetail = () => {
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       result.assets.forEach(async (selectedImage) => {
-        if (selectedImage.uri.endsWith('.jpeg') || selectedImage.uri.endsWith('.jpg')) { // jpeg yap
-          const manipResult = await ImageManipulator.manipulateAsync(
-            selectedImage.uri,
-            [{ resize: { width: selectedImage.width, height: selectedImage.height } }],
-            { compress: 1, base64: false }
-          );
-          setSelectedImages((prevImages) => [...prevImages, manipResult.uri]);
-        } else {
-          alert("Please select JPEG images only.");
-        }
+        setSelectedImages((prevImages) => [...prevImages, selectedImage.uri]);
+
       });
     }
   };
@@ -296,16 +275,15 @@ const courseDetail = () => {
       content: {
         title: "Yoklama Bilgisi Güncellendi",
         body: "Devamsızlık sınırını aşan öğrencileri inceleyin.",
-        data: { screen: 'LimitBreachesScreen' }, // Ekstra bilgi gönderebilirsiniz
+        data: { screen: 'LimitBreachesScreen' },
       },
-      trigger: null, // Hemen gönderir
+      trigger: null,
     });
   }
 
   async function handleNotificationResponse(response) {
     console.log("notif", response);
 
-    // Bildirim tıklandığında yönlendirme
     router.push({
       pathname: "/limitBreachList",
       params: {
@@ -340,7 +318,13 @@ const courseDetail = () => {
 
       if (response.ok) {
         const responseData = await response.json();
-        console.log(responseData);
+        console.log("responseData", responseData);
+
+        let isEmpty = Object.values(responseData).some(imageData => Object.keys(imageData).length === 0);
+        if (isEmpty) {
+          Alert.alert("Hata", "Bazı görüntülerde hata oldu. Yeniden deneyiniz.");
+          return;
+        }
 
         sendSignatureToServer(responseData);
 
@@ -356,7 +340,6 @@ const courseDetail = () => {
 
         const token = await AsyncStorage.getItem('auth');
 
-        // Token'i kontrol et
         if (token === null) {
           console.log('Token not found in AsyncStorage');
           return;
@@ -423,7 +406,7 @@ const courseDetail = () => {
           <View style={styles.weekCardContainer} key={index}>
             <WeekCard
 
-              weekDate={weekDates[index]} // Gösterim için orijinal formatı kullanın
+              weekDate={weekDates[index]}
               attendedCount={attendance ? attendance.attendedCount : 0}
               notAttendedCount={attendance ? attendance.notAttendedCount : 0}
               onPress={() =>
@@ -431,7 +414,7 @@ const courseDetail = () => {
                   pathname: "/attendanceList",
                   params: {
                     courseCode: courseCode,
-                    courseWeek: weekDates[index] // Rota parametresi için de orijinal tarih formatını kullanın
+                    courseWeek: weekDates[index]
                   },
                 })
               }
@@ -463,7 +446,7 @@ const styles = StyleSheet.create({
   lecturesContainer: {
     flex: 1,
     backgroundColor: GlobalStyles.surfaceColors.primary,
-   
+
   },
 
   headerContainer: {
@@ -472,7 +455,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     padding: 18,
     backgroundColor: GlobalStyles.surfaceColors.secondary500,
-    
+
   },
   headerText: {
     color: GlobalStyles.surfaceColors.primary,
@@ -537,7 +520,7 @@ const styles = StyleSheet.create({
     //paddingHorizontal: 20,  
   },
   button: {
-    flex: 1,  // Butonların esnekliğini ayarla
+    flex: 1,
     borderWidth: 1,
     borderColor: GlobalStyles.surfaceColors.secondary500,
     borderRadius: 10,

@@ -1,6 +1,7 @@
 import {
   Alert,
   Modal,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -8,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Card from "../../components/Card";
 import PrimaryButton from "../../components/PrimaryButton";
 import SecondaryButton from "../../components/SecondaryButton";
@@ -21,7 +22,10 @@ import * as DocumentPicker from "expo-document-picker";
 import Loading from "../../components/Loading";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import FAB from "../../components/FAB";
+import Feather from '@expo/vector-icons/Feather';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 
 
@@ -35,36 +39,42 @@ const courses = () => {
   const [newCourseWeek, setNewCourseWeek] = useState("");
   const [newCourseLimit, setNewCourseLimit] = useState("");
   const [newCourseStartDate, setNewCourseStartDate] = useState("");
-  const [csvFileName, setCsvFileName] = useState(""); // State for CSV file name
+  const [csvFileName, setCsvFileName] = useState("");
   const [csvData, setCsvData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedEditCourse, setSelectedEditCourse] = useState(null);
+  const [isEditCourseModalVisible, setEditCourseModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
 
   const ip_address = process.env.EXPO_PUBLIC_BASE_IP;
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = await AsyncStorage.getItem("auth");
-        const coursesResponse = await axios.get(
-          `http://${ip_address}:8000/user/courses`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const fetchedCourses = coursesResponse.data.courses;
-        setUserCourses(fetchedCourses);
-      } catch (error) {
-        console.error("Error fetching user courses:", error.message);
-      }
-    };
 
+  const fetchData = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const token = await AsyncStorage.getItem("auth");
+      const response = await axios.get(`http://${ip_address}:8000/user/courses`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUserCourses(response.data.courses);
+    } catch (error) {
+      console.error("Error fetching user courses:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [ip_address]);
+
+  useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
+
+  const onRefresh = () => {
+    fetchData();
+  };
+
 
   const showDatePicker = () => {
     setDatePickerVisible(true);
@@ -75,9 +85,9 @@ const courses = () => {
   };
 
   const handleConfirm = (date) => {
-    const formattedDate = date.toISOString().split('T')[0]; // Format the date as desired
+    const formattedDate = date.toISOString().split('T')[0];
     setSelectedDate(date);
-    setNewCourseStartDate(formattedDate); // Set the formatted date
+    setNewCourseStartDate(formattedDate);
     hideDatePicker();
   };
 
@@ -88,8 +98,8 @@ const courses = () => {
         console.log("DocumentPicker result:", result);
         console.log(result.canceled);
 
-        const asset = result.assets[0]; // assets dizisinin ilk öğesine erişim
-        const { mimeType, name, uri } = asset; // asset öğesinden gerekli bilgileri al
+        const asset = result.assets[0];
+        const { mimeType, name, uri } = asset;
 
         console.log("mimeType", mimeType);
         console.log("name", name);
@@ -99,7 +109,6 @@ const courses = () => {
         fetch(uri)
           .then(response => response.text())
           .then(fileData => {
-            // CSV verilerini ayarla
             setCsvData(fileData);
             console.log("aaat", fileData);
           })
@@ -121,9 +130,6 @@ const courses = () => {
     }
   };
 
-
-
-  // Yeni ders ekleme fonksiyonu
   const handleAddCourse = async () => {
     try {
       if (
@@ -131,14 +137,14 @@ const courses = () => {
         !newCourseCode ||
         !newCourseStartDate ||
         !newCourseWeek ||
-        !newCourseLimit
+        !newCourseLimit ||
+        !csvFileName
       ) {
         Alert.alert("Hata", "Boş alanları doldurunuz.");
         return;
       }
       setLoading(true);
 
-      // Text inputlardan alınan değerleri gönderme işlemi
       const token = await AsyncStorage.getItem("auth");
       const addCourseResponse = await axios.post(
         `http://${ip_address}:8000/user/addCourse`,
@@ -161,18 +167,16 @@ const courses = () => {
 
       console.log(userCourses);
 
-      // CSV dosyasını gönderme işlemi
-      if (csvData) {
-        // formData oluştur
-        console.log("Buraya girebildi mi");
-        const formData = new FormData();
-        formData.append("csvData", csvData); // CSV verisini formData'ya ekle
 
-        // Axios ile uploadCsv endpointine POST isteği gönder
+      if (csvData) {
+
+        const formData = new FormData();
+        formData.append("csvData", csvData);
+
         const uploadCsvResponse = await axios.post(
           `http://${ip_address}:8000/uploadCsv`,
           {
-            csvData: csvData, // CSV verisini gönder
+            csvData: csvData,
             courseCode: newCourseCode
           },
           {
@@ -183,7 +187,6 @@ const courses = () => {
           }
         );
 
-        // uploadCsvResponse'dan gelen verileri kontrol et ve gerekli işlemleri yap
         console.log("CSV dosyası yüklendi:", uploadCsvResponse.data);
       }
       setLoading(false);
@@ -200,7 +203,7 @@ const courses = () => {
   const handleDeleteCourse = async (course) => {
     try {
       const confirmDelete = await new Promise((resolve) => {
-        // Alert ile kullanıcıya silme işlemini onaylamasını sor
+
         Alert.alert(
           "Dersi Sil",
           `Dersi silmek istediğinizden emin misiniz?`,
@@ -220,7 +223,6 @@ const courses = () => {
       });
 
       if (!confirmDelete) {
-        // Kullanıcı silmeyi iptal etti
         return;
       }
 
@@ -320,15 +322,58 @@ const courses = () => {
     routes.push({
       pathname: "/courseParticipants",
       params: {
-        courseCode: course.code,
+        courseCode: selectedCourse.code,
       },
     });
   };
 
+  const openEditCourseModal = (course) => {
+    setSelectedEditCourse(course);
+    setNewCourseLimit(course.limit);
+    setEditCourseModalVisible(true);
+  };
 
+  const handleUpdateCourse = async () => {
+    try {
+      if (!newCourseLimit) {
+        Alert.alert("Hata", "Devamsızlık sınırını giriniz.");
+        return;
+      }
+      setLoading(true);
+
+      const token = await AsyncStorage.getItem("auth");
+      const response = await axios.post(
+        `http://${ip_address}:8000/user/updateCourse`,
+        {
+          code: selectedEditCourse.code,
+          limit: newCourseLimit,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const updatedCourse = response.data.course;
+      const updatedCourses = userCourses.map((course) =>
+        course._id === updatedCourse._id ? updatedCourse : course
+      );
+
+      setUserCourses(updatedCourses);
+      setLoading(false);
+      setEditCourseModalVisible(false);
+    } catch (error) {
+      console.error("Error updating course:", error.message);
+    }
+  };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container}
+    // refreshControl={
+    //   <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+    // }
+    >
       <ScrollView style={styles.lecturesContainer}>
         <View style={styles.headerContainer}>
           <Text style={styles.headerText}>DERSLERİM</Text>
@@ -339,71 +384,111 @@ const courses = () => {
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={styles.contentContainer} >
-
-          {userCourses.map((course) => (
-            <TouchableOpacity
-              key={course.code}
-              onPress={() => handleCardPress(course)}
-            >
-              <Card style={styles.courseCard} attendance="attended">
-
-                <View style={styles.iconsContainer}>
-                  <TouchableOpacity
-                    style={styles.deleteIconContainer}
-                    onPress={() => handleDeleteCourse(course)}
-                  >
-                    <AntDesign name="delete" size={24} color="white" />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.viewIconContainer}
-                    onPress={() => handleViewParticipants(course)}
-                  >
-                    <AntDesign name="eyeo" size={28} color="white" />
-                  </TouchableOpacity>
-                </View>
-                <Text style={styles.lectureCode}>{course.code.toUpperCase()}</Text>
-                <Text style={styles.lecture}>{course.name}</Text>
-              </Card>
-              {selectedCourse && selectedCourse.code === course.code && (
-                <View style={styles.optionsContainer}>
-                  <TouchableOpacity
-                    onPress={handleWeekInfoPress}
-                    style={styles.optionButton}
-                  >
-                    <Text style={styles.optionText}>Hafta Bilgisi</Text>
-                    <AntDesign name="arrowright" size={24} color="white" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handleStatisticsPress}
-                    style={styles.optionButton}
-                  >
-                    <Text style={styles.optionText}>İstatistik</Text>
-                    <AntDesign name="arrowright" size={24} color="white" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handleSignatureDetailPress}
-                    style={styles.optionButton}
-                  >
-                    <Text style={styles.optionText}>İmza Benzerlikleri</Text>
-                    <AntDesign name="arrowright" size={24} color="white" />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={handleLimitBreachListPress}
-                    style={styles.optionButton}
-                  >
-                    <Text style={styles.optionText}>Devamsızlık</Text>
-                    <AntDesign name="arrowright" size={24} color="white" />
-                  </TouchableOpacity>
-
-
-                </View>
-              )}
-            </TouchableOpacity>
-          ))}
+        <ScrollView contentContainerStyle={styles.contentContainer}>
+          {userCourses.length === 0 ? (
+            <Card style={styles.courseCard}>
+              <Text style={styles.optionText}>Kayıt bulunamadı. Aşağıdaki butona tıklayarak yeni ders ekle! </Text>
+            </Card>
+          ) : (
+            userCourses.map((course) => (
+              <TouchableOpacity
+                key={course.code}
+                onPress={() => handleCardPress(course)}
+              >
+                <Card style={styles.courseCard} attendance="attended">
+                  <View style={styles.iconsContainer}>
+                    <TouchableOpacity
+                      style={styles.deleteIconContainer}
+                      onPress={() => handleDeleteCourse(course)}
+                    >
+                      <MaterialIcons name="delete-outline" size={28} color="white" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.viewIconContainer}
+                      onPress={() => openEditCourseModal(course)}
+                    >
+                      <Feather name="edit-2" size={24} color="white" />
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.lectureCode}>{course.code.toUpperCase()}</Text>
+                  <Text style={styles.lecture}>{course.name}</Text>
+                </Card>
+                {selectedCourse && selectedCourse.code === course.code && (
+                  <View style={styles.optionsContainer}>
+                    <TouchableOpacity
+                      onPress={handleWeekInfoPress}
+                      style={styles.optionButton}
+                    >
+                      <Text style={styles.optionText}>Hafta Bilgisi</Text>
+                      <AntDesign name="arrowright" size={24} color="white" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={handleStatisticsPress}
+                      style={styles.optionButton}
+                    >
+                      <Text style={styles.optionText}>İstatistik</Text>
+                      <AntDesign name="arrowright" size={24} color="white" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={handleSignatureDetailPress}
+                      style={styles.optionButton}
+                    >
+                      <Text style={styles.optionText}>İmza Benzerlikleri</Text>
+                      <AntDesign name="arrowright" size={24} color="white" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={handleLimitBreachListPress}
+                      style={styles.optionButton}
+                    >
+                      <Text style={styles.optionText}>Devamsızlık</Text>
+                      <AntDesign name="arrowright" size={24} color="white" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={handleViewParticipants}
+                      style={styles.optionButton}
+                    >
+                      <Text style={styles.optionText}>Öğrenci Listesi</Text>
+                      <AntDesign name="arrowright" size={24} color="white" />
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </TouchableOpacity>
+            ))
+          )}
         </ScrollView>
+
+        <Modal visible={isEditCourseModalVisible} animationType="slide" transparent={true}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <TouchableOpacity
+                onPress={() => setEditCourseModalVisible(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={30} color="black" />
+              </TouchableOpacity>
+              <View style={styles.modalHeaderTextContainer}>
+                <Text style={styles.modalHeaderText}>DEVAMSIZLIK SINIRI</Text>
+              </View>
+              <TextInput
+                placeholder="Mevcut Devamsızlık Sınırı"
+                value={selectedEditCourse ? `Mevcut Sınır: ${selectedEditCourse.limit} hafta` : ""}
+                editable={false}
+                style={styles.input}
+              />
+              <TextInput
+                placeholder="Yeni Devamsızlık Sınırı"
+                placeholderTextColor={GlobalStyles.surfaceColors.placeholder}
+                value={newCourseLimit}
+                onChangeText={setNewCourseLimit}
+                style={styles.input}
+                keyboardType="numeric"
+              />
+              <PrimaryButton onPress={handleUpdateCourse}>Güncelle</PrimaryButton>
+              <Loading visible={loading} />
+            </View>
+          </View>
+        </Modal>
+
 
         <Modal
           visible={isAddCourseModalVisible}
@@ -510,8 +595,8 @@ const courses = () => {
           </View>
         </Modal>
       </ScrollView>
-      <FAB onPress={() => setAddCourseModalVisible(true)} />
 
+      <FAB onPress={() => setAddCourseModalVisible(true)} />
     </View>
   );
 };
@@ -560,7 +645,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 16,
   },
-  iconsContainer:{
+  iconsContainer: {
     position: "absolute",
     flexDirection: "row",
     top: 6,
